@@ -351,7 +351,7 @@ DBのマイグレーションは必ずlaravelで行うこと。
 DBはmysql8をインストールしてある
 APIも基本はこちらで作ること
 APIのルートは/api/以下にするように
-php側で作るAPIその１、ゲート開閉APIを作る。今回Sesame Web APIにアクセスしてロックを動かす機能を実装
+php側で追加で作るAPIゲート開閉APIを作る。今回Sesame Web APIにアクセスしてロックを動かす機能を実装
 
 ### バッチ・バックエンド・API
 /python/
@@ -359,8 +359,7 @@ php側で作るAPIその１、ゲート開閉APIを作る。今回Sesame Web API
 フレームワークは必須ではないが、使うならflaskを使うこと。
 pythonでAPI作る場合はこちらに作ること。
 APIのルートは/papi/以下にすること
-python側で作るAPIその１、ナンバー画像を受けて、Alibaba Cloud Model Studioにあるqwen3-VLを利用してナンバー情報を返すAPI
-python側で作るAPIその２、会話用プロンプトからqwenのMCPサーバーを呼び出す機能を実装
+python側で追加で作るAPI、会話用プロンプトからqwenのMCPサーバーを呼び出す機能を実装
 
 ### ドキュメント
 APIのドキュメントは/docs/以下に置くこと
