@@ -9,7 +9,7 @@
  * **Validates: Requirements 8.4**
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 import { Hono } from 'hono';
 import {
