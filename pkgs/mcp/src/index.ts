@@ -13,7 +13,7 @@ const baseURL = process.env.RESOURCE_SERVER_URL as string; // e.g. https://examp
 const endpointPath = process.env.ENDPOINT_PATH as string; // e.g. /weather
 
 if (!privateKey || !baseURL || !endpointPath) {
-  throw new Error("Missing environment variables");
+    throw new Error("Missing environment variables");
 }
 
 // ステーブルコインを支払うウォレットインスタンスを生成
@@ -23,32 +23,53 @@ const client = withPaymentInterceptor(axios.create({ baseURL }), account);
 
 // Create an MCP server
 const server = new McpServer({
-  name: "x402 MCP Client",
-  version: "1.0.0",
+    name: "x402 MCP Client",
+    version: "1.0.0",
 });
 
 // Add get-weather tool
 server.tool(
-  "get-data-from-resource-server",
-  "Get data from the resource server (in this example, the weather)",
-  async () => {
-    // 環境変数で渡されたエンドポイントを指定してAPIを実行する
-    // ここでx402の支払い処理が自動的に行われる
-    const res = await client.get(endpointPath);
-    return {
-      content: [{ type: "text", text: JSON.stringify(res.data) }],
-    };
-  },
+    "get-data-from-resource-server",
+    "Get data from the resource server (in this example, the weather)",
+    async () => {
+        try {
+            // 環境変数で渡されたエンドポイントを指定してAPIを実行する
+            // ここでx402の支払い処理が自動的に行われる
+            const res = await client.get(endpointPath);
+
+            // Debug logging
+            console.error("[MCP Server] Response status:", res.status);
+            console.error("[MCP Server] Response data:", JSON.stringify(res.data));
+            console.error("[MCP Server] Response data type:", typeof res.data);
+
+            // Ensure we always return non-empty text
+            const dataStr = JSON.stringify(res.data);
+            if (!dataStr || dataStr === "" || dataStr === "null" || dataStr === "undefined") {
+                return {
+                    content: [{ type: "text", text: "No data received from resource server" }],
+                };
+            }
+
+            return {
+                content: [{ type: "text", text: dataStr }],
+            };
+        } catch (error) {
+            console.error("[MCP Server] Error:", error);
+            return {
+                content: [{ type: "text", text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+            };
+        }
+    },
 );
 
 const transport = new StdioServerTransport();
 
 // Use async IIFE to handle top-level await
 (async () => {
-  try {
-    await server.connect(transport);
-  } catch (error) {
-    console.error("Failed to connect server:", error);
-    process.exit(1);
-  }
+    try {
+        await server.connect(transport);
+    } catch (error) {
+        console.error("Failed to connect server:", error);
+        process.exit(1);
+    }
 })();
