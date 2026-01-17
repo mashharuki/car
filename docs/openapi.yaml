@@ -1,0 +1,1035 @@
+openapi: 3.0.3
+info:
+  title: License Plate Linked Wallet System API
+  version: 1.0.0
+  description: |
+    API specification generated from docs/api-endpoints-summary.md.
+    This spec focuses on endpoint structure and minimal request/response schemas.
+servers:
+  - url: /api
+    description: Laravel API (business logic)
+  - url: /papi
+    description: Flask API (AI/vision)
+  - url: /
+    description: x402 Server (Hono)
+
+tags:
+  - name: Flask
+  - name: Auth
+  - name: User
+  - name: Plates
+  - name: Vehicles
+  - name: Loans
+  - name: Notifications
+  - name: Transactions
+  - name: Settings
+  - name: x402
+
+paths:
+  /papi/recognize:
+    post:
+      tags: [Flask]
+      summary: License plate recognition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecognizeRequest'
+      responses:
+        '200':
+          description: Recognition result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecognizeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /papi/validate-image:
+    post:
+      tags: [Flask]
+      summary: Validate image quality
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageValidationRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageValidationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /papi/appraise-vehicle:
+    post:
+      tags: [Flask]
+      summary: Vehicle appraisal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppraiseVehicleRequest'
+      responses:
+        '200':
+          description: Appraisal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppraiseVehicleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/auth/connect:
+    post:
+      tags: [Auth]
+      summary: Wallet-based authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthConnectRequest'
+      responses:
+        '200':
+          description: Auth token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthConnectResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/user/profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/plates/register:
+    post:
+      tags: [Plates]
+      summary: Register license plate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlateRegisterRequest'
+      responses:
+        '200':
+          description: Plate registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/plates/{plateNumber}:
+    get:
+      tags: [Plates]
+      summary: Get license plate info
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PlateNumber'
+      responses:
+        '200':
+          description: Plate info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/plates/wallet/{plateNumber}:
+    get:
+      tags: [Plates]
+      summary: Convert plate number to wallet address
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PlateNumber'
+      responses:
+        '200':
+          description: Wallet address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateWalletResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/plates/validate-rental:
+    post:
+      tags: [Plates]
+      summary: Validate rental car plate number
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlateValidateRentalRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateValidateRentalResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/vehicles/register:
+    post:
+      tags: [Vehicles]
+      summary: Register vehicle info
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRegisterRequest'
+      responses:
+        '200':
+          description: Vehicle registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/vehicles/{id}:
+    get:
+      tags: [Vehicles]
+      summary: Get vehicle info
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: Vehicle info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/vehicles/{id}/appraisal:
+    get:
+      tags: [Vehicles]
+      summary: Get appraisal result
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: Appraisal result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppraisalInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Vehicles]
+      summary: Save appraisal result
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppraisalCreateRequest'
+      responses:
+        '200':
+          description: Appraisal saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppraisalInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/loans/status:
+    get:
+      tags: [Loans]
+      summary: Get loan status
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Loan status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/loans/history:
+    get:
+      tags: [Loans]
+      summary: Get loan transaction history
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Loan history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/loans/borrow:
+    post:
+      tags: [Loans]
+      summary: Record manual borrow
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanActionRequest'
+      responses:
+        '200':
+          description: Borrow recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/loans/repay:
+    post:
+      tags: [Loans]
+      summary: Record manual repayment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanActionRequest'
+      responses:
+        '200':
+          description: Repayment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/subscribe:
+    post:
+      tags: [Notifications]
+      summary: Subscribe push notifications
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSubscribeRequest'
+      responses:
+        '200':
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSubscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/unsubscribe:
+    post:
+      tags: [Notifications]
+      summary: Unsubscribe push notifications
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationUnsubscribeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Get notifications
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/{id}/read:
+    put:
+      tags: [Notifications]
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/transactions/history:
+    get:
+      tags: [Transactions]
+      summary: Get transaction history
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Transaction history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionHistory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/settings:
+    get:
+      tags: [Settings]
+      summary: Get user settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Settings]
+      summary: Update user settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettings'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tip:
+    post:
+      tags: [x402]
+      summary: Execute tip transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipRequest'
+      responses:
+        '200':
+          description: Tip transaction submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /tip/status/{txHash}:
+    get:
+      tags: [x402]
+      summary: Get tip transaction status
+      parameters:
+        - $ref: '#/components/parameters/TxHash'
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PlateNumber:
+      name: plateNumber
+      in: path
+      required: true
+      schema:
+        type: string
+      example: "品川330あ1234"
+    VehicleId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 123
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 456
+    TxHash:
+      name: txHash
+      in: path
+      required: true
+      schema:
+        type: string
+      example: "0xabc123..."
+
+  responses:
+    Success:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessResponse'
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: ok
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: invalid_request
+        message:
+          type: string
+          example: Invalid request payload
+
+    RecognizeRequest:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64:
+          type: string
+          description: Base64-encoded image
+        metadata:
+          type: object
+          additionalProperties: true
+
+    RecognizeResponse:
+      type: object
+      properties:
+        plateNumber:
+          type: string
+          example: "品川330あ1234"
+        confidence:
+          type: number
+          format: float
+          example: 0.98
+
+    ImageValidationRequest:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64:
+          type: string
+
+    ImageValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        issues:
+          type: array
+          items:
+            type: string
+          example: ["blur", "low_light"]
+
+    AppraiseVehicleRequest:
+      type: object
+      required: [vehicleId, manufacturer, model, year, mileage]
+      properties:
+        vehicleId:
+          type: integer
+          example: 123
+        manufacturer:
+          type: string
+          example: "Toyota"
+        model:
+          type: string
+          example: "Prius"
+        year:
+          type: integer
+          example: 2020
+        mileage:
+          type: integer
+          example: 42000
+
+    AppraiseVehicleResponse:
+      type: object
+      properties:
+        appraisalAmount:
+          type: integer
+          example: 2000000
+        currency:
+          type: string
+          example: JPY
+        expiryDate:
+          type: string
+          format: date
+          example: "2026-02-17"
+
+    AuthConnectRequest:
+      type: object
+      required: [walletAddress, signature]
+      properties:
+        walletAddress:
+          type: string
+          example: "0x1234..."
+        signature:
+          type: string
+        message:
+          type: string
+
+    AuthConnectResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        userId:
+          type: integer
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        displayName:
+          type: string
+        walletAddress:
+          type: string
+
+    PlateRegisterRequest:
+      type: object
+      required: [plateNumber, walletAddress]
+      properties:
+        plateNumber:
+          type: string
+        walletAddress:
+          type: string
+        ownerName:
+          type: string
+
+    PlateInfo:
+      type: object
+      properties:
+        plateNumber:
+          type: string
+        walletAddress:
+          type: string
+        ownerName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PlateWalletResponse:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+
+    PlateValidateRentalRequest:
+      type: object
+      required: [plateNumber]
+      properties:
+        plateNumber:
+          type: string
+
+    PlateValidateRentalResponse:
+      type: object
+      properties:
+        isRental:
+          type: boolean
+          example: false
+
+    VehicleRegisterRequest:
+      type: object
+      required: [plateNumber, manufacturer, model, year, mileage]
+      properties:
+        plateNumber:
+          type: string
+        manufacturer:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        mileage:
+          type: integer
+
+    VehicleInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        plateNumber:
+          type: string
+        manufacturer:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        mileage:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    AppraisalInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        vehicleId:
+          type: integer
+        appraisalAmount:
+          type: integer
+        currency:
+          type: string
+        expiryDate:
+          type: string
+          format: date
+        source:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AppraisalCreateRequest:
+      type: object
+      required: [appraisalAmount, expiryDate]
+      properties:
+        appraisalAmount:
+          type: integer
+        currency:
+          type: string
+          example: JPY
+        expiryDate:
+          type: string
+          format: date
+        source:
+          type: string
+
+    LoanStatus:
+      type: object
+      properties:
+        currentBalance:
+          type: integer
+        outstandingAmount:
+          type: integer
+        creditLimit:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    LoanHistoryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoanTransaction'
+
+    LoanTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          example: borrow
+        amount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    LoanActionRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: integer
+        note:
+          type: string
+
+    LoanActionResponse:
+      type: object
+      properties:
+        transactionId:
+          type: integer
+        status:
+          type: string
+          example: recorded
+
+    NotificationSubscribeRequest:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint:
+          type: string
+        keys:
+          type: object
+          properties:
+            p256dh:
+              type: string
+            auth:
+              type: string
+
+    NotificationUnsubscribeRequest:
+      type: object
+      required: [endpoint]
+      properties:
+        endpoint:
+          type: string
+
+    NotificationSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+        endpoint:
+          type: string
+
+    NotificationList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationItem'
+
+    NotificationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    TransactionHistory:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionItem'
+
+    TransactionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        amount:
+          type: integer
+        txHash:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UserSettings:
+      type: object
+      properties:
+        locale:
+          type: string
+          example: ja-JP
+        notificationsEnabled:
+          type: boolean
+        privacyMode:
+          type: boolean
+
+    TipRequest:
+      type: object
+      required: [amount, toPlateNumber]
+      properties:
+        amount:
+          type: integer
+          example: 500
+        currency:
+          type: string
+          example: JPY
+        toPlateNumber:
+          type: string
+          example: "品川330あ1234"
+        memo:
+          type: string
+
+    TipResponse:
+      type: object
+      properties:
+        txHash:
+          type: string
+        status:
+          type: string
+          example: submitted
+
+    TipStatusResponse:
+      type: object
+      properties:
+        txHash:
+          type: string
+        status:
+          type: string
+          example: confirmed
+        updatedAt:
+          type: string
+          format: date-time
