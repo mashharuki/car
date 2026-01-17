@@ -61,7 +61,7 @@
 |ナンバープレート認識機能|車のナンバープレートの情報を認識する。||
 |ウォレットアドレス変換機能|ゼロ知識証明により内容を秘匿化しながら決定論的にナンバープレートからウォレットアドレスを算出する機能||
 |自動車の価値を算出する機能(トークン化)|自動車の現在の評価額をトークン化する機能||
-|チップ機能|道とかを譲ってもらった機能||
+|チップ機能|道とかを譲ってもらった機能(支払い方法についてはx402を送信する)||
 
 ## 機能ごとの処理シーケンス図
 
@@ -204,8 +204,8 @@ sequenceDiagram
 | カテゴリ | 技術 |
 |---------|------|
 | **フロントエンド** | Next.js<br/>TypeScript<br/>TailwindCSS<br/> Shadcn/ui<br/>React Bits<br/>biome |
-| **バックエンド** | laravel<br/> php<br/> flask<br/> python |
-| **AI** | Qwen<br/> allenai/Molmo2-8B |
+| **バックエンド** | laravel<br/> php<br/> flask<br/> python <br/> Hono <br/> TypeScript|
+| **AI** | Qwen<br/> allenai/Molmo2-8B <br/> MCP|
 | **Web3** | Base Sepolia<br/>AA<br/> SmartAccount<br/> ゼロ知識証明<br/> Solidity<br/> Circom<br/> x402 |
 
 ## 動かし方
