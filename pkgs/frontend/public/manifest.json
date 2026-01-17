@@ -1,6 +1,6 @@
 {
-  "name": "Car App",
-  "short_name": "Car",
+  "name": "inCar",
+  "short_name": "inCar",
   "description": "次世代オートモーティブ生成AIアプリケーション",
   "start_url": "/",
   "display": "standalone",
