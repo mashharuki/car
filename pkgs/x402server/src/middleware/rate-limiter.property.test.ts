@@ -34,12 +34,6 @@ const validRateLimitConfigArbitrary = (): fc.Arbitrary<RateLimitConfig> =>
   });
 
 /**
- * レート制限を超えるリクエスト数を生成
- */
-const exceedingRequestCountArbitrary = (maxRequests: number): fc.Arbitrary<number> =>
-  fc.integer({ min: maxRequests + 1, max: maxRequests + 100 });
-
-/**
  * レート制限内のリクエスト数を生成
  */
 const withinLimitRequestCountArbitrary = (maxRequests: number): fc.Arbitrary<number> =>
