@@ -10,15 +10,18 @@ Kiro-style Spec Driven Development implementation & t-wada san's Test Driven Dev
 
 ## SKILLについて
 
-必要に応じて以下のSKILLを使ってください。
+以下のSKILLを該当するタスクで**必ず使用**してください：
 
-- vercel-react-best-practices
-- web-design-guidelines
-- hackathon-guideline
+- **circom-dev**: ZK証明の回路開発、circom実装、算術回路の設計・テスト時に使用
+- **vercel-react-best-practices**: React/Next.jsコンポーネント作成、パフォーマンス最適化時に使用
+- **web-design-guidelines**: UI/UXレビュー、アクセシビリティチェック、デザイン監査時に使用
+- **hackathon-guideline**: このリポジトリでのアプリ開発時（次世代オートモーティブ生成AIハッカソン提出用）に使用
 
 ## Sub Agentについて
 
-- apple-style-ui-designer
+以下のSub Agentを該当するタスクで**必ず使用**してください：
+
+- apple-style-ui-designer: Apple社のUIデザインガイドラインに沿ってUIコンポーネントを設計・開発する
 
 ## Project Context
 
