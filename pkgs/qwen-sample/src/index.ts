@@ -1,4 +1,7 @@
 import { Agent, MCPServerStdio, OpenAIProvider, run, withTrace } from "@openai/agents";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 /**
  * メイン関数
@@ -19,7 +22,7 @@ async function main() {
   await mcpServer.connect();
 
   try {
-    await withTrace("MCP Filesystem Example", async () => {
+    await withTrace("x402 MCP", async () => {
       // カスタムモデルプロバイダーを作成
       const provider = new OpenAIProvider({
         apiKey: process.env.DASHSCOPE_API_KEY || "",
