@@ -6,16 +6,17 @@ Web3 × AI融合のモビリティプラットフォーム。フロントエン�
 
 ## Core Technologies
 
-- **Language**: TypeScript, Solidity, Circom
-- **Framework**: Next.js 14 (App Router), Hardhat, Hono
-- **Runtime**: Node.js 20+, pnpm workspace
+- **Language**: TypeScript, Solidity, Circom, PHP, Python
+- **Framework**: Next.js 14 (App Router), Hardhat, Hono, Laravel 11, Flask
+- **Runtime**: Node.js 20+, pnpm workspace, PHP 8.3+, Python 3.x
 - **Blockchain**: Base Sepolia (Ethereum L2)
 - **AI**: Qwen-VL, allenai/Molmo2-8B
+- **Database**: MySQL 8.0+
 
 ## Key Libraries
 
 ### Frontend
-- React 18, TailwindCSS, shadcn/ui
+- React 18, TailwindCSS, shadcn/ui, React Bits
 - wagmi v2, viem, RainbowKit（Web3統合）
 
 ### Contract
@@ -28,7 +29,16 @@ Web3 × AI融合のモビリティプラットフォーム。フロントエン�
 
 ### Backend
 - Hono（軽量Webフレームワーク）
+- Laravel 11（PHP 8.3+、メインAPI）
+- Flask（Python、バッチ処理・AI連携）
 - x402（決済プロトコル）
+
+### API Routes
+- `/api/` - Laravel API（メイン）
+- `/papi/` - Flask API（Python）
+
+### Documentation
+- `/docs/` - APIドキュメント（PHP/Python別）
 
 ## Development Standards
 

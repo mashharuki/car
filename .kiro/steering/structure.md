@@ -36,6 +36,23 @@ pnpm workspaceによるモノレポ構成。機能ドメインごとにパッケ
 **Purpose**: Qwen AI統合サンプル
 **Example**: `src/index.ts` - AI呼び出しサンプル
 
+### Laravel Backend
+**Location**: `/laravel/`
+**Purpose**: メインバックエンドAPI（Laravel 11）
+**API Route**: `/api/` 以下
+**Database**: MySQL 8.0+（マイグレーションはLaravelで管理）
+
+### Python Backend
+**Location**: `/python/`
+**Purpose**: バッチ処理・AI連携API（Flask）
+**API Route**: `/papi/` 以下
+**Framework**: Flask（必須ではないが推奨）
+
+### Documentation
+**Location**: `/docs/`
+**Purpose**: APIドキュメント
+**Structure**: PHP側とPython側で分離（細かく分けない）
+
 ## Naming Conventions
 
 - **Files**: kebab-case（例: `password-hash.circom`）

@@ -26,11 +26,13 @@ graph TB
         NotificationUI[Notification Center]
     end
 
-    subgraph Backend["バックエンド (Hono)"]
+    subgraph Backend["バックエンド (Hono/Laravel/Flask)"]
         VehicleAPI[Vehicle API]
         AppraisalAPI[Appraisal API]
         LoanAPI[Loan API]
         NotificationAPI[Notification API]
+        LaravelAPI[Laravel API - /api/]
+        FlaskAPI[Flask API - /papi/]
     end
 
     subgraph External["外部サービス"]

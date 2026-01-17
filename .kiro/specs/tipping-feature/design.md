@@ -34,11 +34,13 @@ graph TB
         HazardDetector[Hazard Lamp Detector]
     end
 
-    subgraph Backend["バックエンド (Hono)"]
+    subgraph Backend["バックエンド (Hono/Laravel/Flask)"]
         TipAPI[Tipping API]
         FeeCalculator[Fee Calculator]
         NotificationService[Notification Service]
         HistoryService[History Service]
+        LaravelAPI[Laravel API - /api/]
+        FlaskAPI[Flask API - /papi/]
     end
 
     subgraph Blockchain["ブロックチェーン (Base Sepolia)"]

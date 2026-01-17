@@ -2,7 +2,7 @@
 
 ## 概要
 
-本設計書は、ナンバープレート認識機能の技術的な実装方針を定義します。この機能は、フロントエンド（Next.js PWA）でのカメラキャプチャ、バックエンド（Hono）でのAPI処理、AI（Qwen-VL）での画像認識を統合し、日本のナンバープレートを高精度で認識するシステムを構築します。
+本設計書は、ナンバープレート認識機能の技術的な実装方針を定義します。この機能は、フロントエンド（Next.js PWA）でのカメラキャプチャ、バックエンド（Hono/Laravel/Flask）でのAPI処理、AI（Qwen-VL、allenai/Molmo2-8B）での画像認識を統合し、日本のナンバープレートを高精度で認識するシステムを構築します。
 
 ### 設計目標
 
@@ -25,15 +25,18 @@ graph TB
         RecognitionUI[Recognition Result UI]
     end
 
-    subgraph Backend["バックエンド (Hono)"]
+    subgraph Backend["バックエンド (Hono/Laravel/Flask)"]
         API[Recognition API]
         RateLimiter[Rate Limiter]
         Cache[Result Cache]
         Logger[Error Logger]
+        LaravelAPI[Laravel API - /api/]
+        FlaskAPI[Flask API - /papi/]
     end
 
     subgraph AI["AI Layer"]
         QwenClient[Qwen-VL Client]
+        MolmoClient[Molmo2-8B Client]
         DashScope[DashScope API]
     end
 
