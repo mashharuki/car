@@ -1,13 +1,21 @@
-import { encodeAbiParameters, type Hex } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  custom,
+  encodeAbiParameters,
+  formatEther,
+  formatUnits,
+  publicActions,
+  type Hex,
+} from "viem";
 import { baseSepolia } from "viem/chains";
-import { createWalletClient, custom } from "viem";
 import type { LicensePlateData } from "@/types/license-plate";
 import {
   encodeLicensePlateToChars,
   createRandomFieldSalt,
 } from "./plate-encoding";
 import { generateLicensePlateProof } from "./zk-proof";
-import { LICENSE_PLATE_FACTORY_ABI } from "./wallet-abi";
+import { ERC20_ABI, LICENSE_PLATE_FACTORY_ABI } from "./wallet-abi";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 const DEFAULT_FACTORY_ADDRESS =
@@ -16,6 +24,11 @@ const DEFAULT_FACTORY_ADDRESS =
 
 const DEFAULT_WASM_URL = "/zk/LicensePlateCommitment.wasm";
 const DEFAULT_ZKEY_URL = "/zk/LicensePlateCommitment_final.zkey";
+const DEFAULT_TOKEN_ADDRESS =
+  process.env.NEXT_PUBLIC_CVTT_ADDRESS ||
+  "0x3e39DaaC436990E8eCb72849D43f81F3b9E7E610";
+const DEFAULT_TOKEN_DECIMALS = 18;
+const DEFAULT_TOKEN_SYMBOL = "CVTT";
 
 export type WalletCreationStatus =
   | "idle"
@@ -36,9 +49,14 @@ export interface WalletCreationResult {
   owner?: Hex;
   txHash?: Hex;
   commitment?: Hex;
+  accountAddress?: Hex;
+  balance?: string;
+  tokenBalance?: string;
+  tokenSymbol?: string;
   error?: string;
   connect: () => Promise<void>;
   createWallet: (plate: LicensePlateData) => Promise<void>;
+  refreshBalance: () => Promise<void>;
 }
 
 function formatHex(value: bigint): Hex {
@@ -52,8 +70,14 @@ export function usePlateWalletCreation(
     DEFAULT_FACTORY_ADDRESS) as Hex;
   const wasmUrl = options.wasmUrl || DEFAULT_WASM_URL;
   const zkeyUrl = options.zkeyUrl || DEFAULT_ZKEY_URL;
+  const tokenAddress = DEFAULT_TOKEN_ADDRESS as Hex;
+  const tokenDecimals = DEFAULT_TOKEN_DECIMALS;
+  const tokenSymbol = DEFAULT_TOKEN_SYMBOL;
 
   const walletClientRef = useRef<ReturnType<typeof createWalletClient> | null>(
+    null,
+  );
+  const publicClientRef = useRef<ReturnType<typeof createPublicClient> | null>(
     null,
   );
 
@@ -61,6 +85,13 @@ export function usePlateWalletCreation(
   const [owner, setOwner] = useState<Hex | undefined>(undefined);
   const [txHash, setTxHash] = useState<Hex | undefined>(undefined);
   const [commitment, setCommitment] = useState<Hex | undefined>(undefined);
+  const [accountAddress, setAccountAddress] = useState<Hex | undefined>(
+    undefined,
+  );
+  const [balance, setBalance] = useState<string | undefined>(undefined);
+  const [tokenBalance, setTokenBalance] = useState<string | undefined>(
+    undefined,
+  );
   const [error, setError] = useState<string | undefined>(undefined);
 
   const ensureWalletClient = useCallback(async () => {
@@ -82,6 +113,21 @@ export function usePlateWalletCreation(
     }
 
     return walletClientRef.current;
+  }, []);
+
+  const ensurePublicClient = useCallback(async () => {
+    if (typeof window === "undefined" || !window.ethereum) {
+      throw new Error("MetaMaskが見つかりません");
+    }
+
+    if (!publicClientRef.current) {
+      publicClientRef.current = createPublicClient({
+        chain: baseSepolia,
+        transport: custom(window.ethereum),
+      }).extend(publicActions);
+    }
+
+    return publicClientRef.current;
   }, []);
 
   const connect = useCallback(async () => {
@@ -140,6 +186,15 @@ export function usePlateWalletCreation(
         const commitmentHex = formatHex(proof.publicSignals[0]);
         setCommitment(commitmentHex);
 
+        const publicClient = await ensurePublicClient();
+        const predictedAddress = (await publicClient.readContract({
+          address: factoryAddress,
+          abi: LICENSE_PLATE_FACTORY_ABI,
+          functionName: "getAddressFromPlate",
+          args: [currentOwner, commitmentHex, salt],
+        })) as Hex;
+        setAccountAddress(predictedAddress);
+
         setStatus("submitting");
         const hash = await walletClient.writeContract({
           address: factoryAddress,
@@ -152,6 +207,17 @@ export function usePlateWalletCreation(
 
         setTxHash(hash);
         setStatus("success");
+        const nextBalance = await publicClient.getBalance({
+          address: predictedAddress,
+        });
+        setBalance(formatEther(nextBalance));
+        const nextTokenBalance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [predictedAddress],
+        });
+        setTokenBalance(formatUnits(nextTokenBalance, tokenDecimals));
       } catch (err) {
         setStatus("error");
         setError(
@@ -159,8 +225,46 @@ export function usePlateWalletCreation(
         );
       }
     },
-    [ensureWalletClient, owner, factoryAddress, wasmUrl, zkeyUrl],
+    [
+      ensureWalletClient,
+      ensurePublicClient,
+      owner,
+      factoryAddress,
+      wasmUrl,
+      zkeyUrl,
+    ],
   );
+
+  const refreshBalance = useCallback(async () => {
+    if (!accountAddress && !owner) {
+      return;
+    }
+
+    try {
+      const publicClient = await ensurePublicClient();
+      const address = accountAddress || owner;
+      if (!address) {
+        return;
+      }
+      const nextBalance = await publicClient.getBalance({ address });
+      setBalance(formatEther(nextBalance));
+      const nextTokenBalance = await publicClient.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: "balanceOf",
+        args: [address],
+      });
+      setTokenBalance(formatUnits(nextTokenBalance, tokenDecimals));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "残高取得に失敗しました");
+    }
+  }, [
+    accountAddress,
+    owner,
+    ensurePublicClient,
+    tokenAddress,
+    tokenDecimals,
+  ]);
 
   return useMemo(
     () => ({
@@ -168,10 +272,28 @@ export function usePlateWalletCreation(
       owner,
       txHash,
       commitment,
+      accountAddress,
+      balance,
+      tokenBalance,
+      tokenSymbol,
       error,
       connect,
       createWallet,
+      refreshBalance,
     }),
-    [status, owner, txHash, commitment, error, connect, createWallet],
+    [
+      status,
+      owner,
+      txHash,
+      commitment,
+      accountAddress,
+      balance,
+      tokenBalance,
+      tokenSymbol,
+      error,
+      connect,
+      createWallet,
+      refreshBalance,
+    ],
   );
 }

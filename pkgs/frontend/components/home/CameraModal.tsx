@@ -15,7 +15,7 @@ import { RecognitionResultDisplay } from "@/components/license-plate/Recognition
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLicensePlateRecognition } from "@/lib/license-plate/use-license-plate-recognition";
-import { usePlateWalletCreation } from "@/lib/wallet/use-plate-wallet";
+import { useWallet } from "@/lib/wallet/wallet-context";
 import type {
   CapturedImage,
   CaptureError,
@@ -88,7 +88,7 @@ export function CameraModal({
     error: walletError,
     connect,
     createWallet,
-  } = usePlateWalletCreation();
+  } = useWallet();
 
   // モーダルが閉じられたときに状態をリセット
   useEffect(() => {
@@ -159,6 +159,57 @@ export function CameraModal({
     await createWallet(recognitionResult);
   }, [recognitionResult, createWallet]);
 
+  const walletPanel = (
+    <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-white">
+      <p className="text-sm text-white/70">ウォレット接続</p>
+      <p className="mt-1 text-base font-semibold">
+        {owner ? "接続済み" : "MetaMaskを接続してください"}
+      </p>
+      {owner && (
+        <p className="mt-1 text-xs text-white/60 break-all">{owner}</p>
+      )}
+      {walletError && (
+        <p className="mt-2 text-xs text-red-200 break-all">{walletError}</p>
+      )}
+      <div className="mt-4 flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={connect}
+          disabled={walletStatus === "connecting"}
+        >
+          {walletStatus === "connecting" ? "接続中..." : "MetaMaskを接続"}
+        </Button>
+        {recognitionResult && (
+          <Button
+            type="button"
+            variant="default"
+            onClick={handleCreateWallet}
+            disabled={
+              walletStatus === "proving" || walletStatus === "submitting"
+            }
+          >
+            {walletStatus === "proving" && "ZK証明を生成中..."}
+            {walletStatus === "submitting" && "送信中..."}
+            {walletStatus === "success" && "作成完了"}
+            {walletStatus === "idle" && "ウォレットを作成"}
+            {walletStatus === "error" && "再試行する"}
+          </Button>
+        )}
+      </div>
+      {commitment && (
+        <p className="mt-3 text-xs text-white/60 break-all">
+          Commitment: {commitment}
+        </p>
+      )}
+      {txHash && (
+        <p className="mt-2 text-xs text-white/60 break-all">
+          Tx Hash: {txHash}
+        </p>
+      )}
+    </div>
+  );
+
   if (!isOpen) {
     return null;
   }
@@ -206,6 +257,7 @@ export function CameraModal({
                 <p>{captureError.message}</p>
               </div>
             )}
+            {walletPanel}
           </div>
         )}
 
@@ -228,61 +280,7 @@ export function CameraModal({
               error={recognitionError}
               onRetry={handleRetry}
             />
-            {recognitionResult && (
-              <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-white">
-                <p className="text-sm text-white/70">ウォレット作成</p>
-                <p className="mt-1 text-base font-semibold">
-                  {owner ? "接続済み" : "MetaMaskを接続してください"}
-                </p>
-                {owner && (
-                  <p className="mt-1 text-xs text-white/60 break-all">
-                    {owner}
-                  </p>
-                )}
-                {commitment && (
-                  <p className="mt-2 text-xs text-white/60 break-all">
-                    Commitment: {commitment}
-                  </p>
-                )}
-                {txHash && (
-                  <p className="mt-2 text-xs text-white/60 break-all">
-                    Tx Hash: {txHash}
-                  </p>
-                )}
-                {walletError && (
-                  <p className="mt-2 text-xs text-red-200 break-all">
-                    {walletError}
-                  </p>
-                )}
-                <div className="mt-4 flex flex-col gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={connect}
-                    disabled={walletStatus === "connecting"}
-                  >
-                    {walletStatus === "connecting"
-                      ? "接続中..."
-                      : "MetaMaskを接続"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="default"
-                    onClick={handleCreateWallet}
-                    disabled={
-                      walletStatus === "proving" ||
-                      walletStatus === "submitting"
-                    }
-                  >
-                    {walletStatus === "proving" && "ZK証明を生成中..."}
-                    {walletStatus === "submitting" && "送信中..."}
-                    {walletStatus === "success" && "作成完了"}
-                    {walletStatus === "idle" && "ウォレットを作成"}
-                    {walletStatus === "error" && "再試行する"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            {walletPanel}
             <div className="mt-6 flex gap-3">
               <Button
                 type="button"
