@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createWalletClient,
   custom,
-  encodeFunctionData,
   keccak256,
   parseUnits,
   toHex,
@@ -15,8 +14,7 @@ import { CameraCapture } from "@/components/license-plate/CameraCapture";
 import { RecognitionResultDisplay } from "@/components/license-plate/RecognitionResult";
 import { Button } from "@/components/ui/button";
 import { useLicensePlateRecognition } from "@/lib/license-plate";
-import { ACCOUNT_ABI, ERC20_ABI } from "@/lib/wallet/wallet-abi";
-import { useWallet } from "@/lib/wallet/wallet-context";
+import { ERC20_ABI } from "@/lib/wallet/wallet-abi";
 import type {
   CapturedImage,
   LicensePlateData,
@@ -104,8 +102,6 @@ export default function ChatPage() {
   } = useLicensePlateRecognition({
     mode: "single",
   });
-
-  const { accountAddress, owner, status, connect, createWallet } = useWallet();
 
   const derivedAddress = useMemo(() => {
     if (!recognitionResult) {
@@ -249,12 +245,6 @@ export default function ChatPage() {
       return;
     }
 
-    if (!accountAddress) {
-      setTipError("CarWalletが未作成です");
-      setTipStatus("error");
-      return;
-    }
-
     if (typeof window === "undefined" || !window.ethereum) {
       setTipError("ウォレットが見つかりません");
       setTipStatus("error");
@@ -273,17 +263,12 @@ export default function ChatPage() {
 
       const [from] = await walletClient.requestAddresses();
       const amount = parseUnits(tipAmount || "0", DEFAULT_TOKEN_DECIMALS);
-      const transferData = encodeFunctionData({
+
+      const hash = await walletClient.writeContract({
+        address: DEFAULT_TOKEN_ADDRESS as Hex,
         abi: ERC20_ABI,
         functionName: "transfer",
         args: [targetAddress as Hex, amount],
-      });
-
-      const hash = await walletClient.writeContract({
-        address: accountAddress,
-        abi: ACCOUNT_ABI,
-        functionName: "execute",
-        args: [DEFAULT_TOKEN_ADDRESS as Hex, 0n, transferData],
         account: from,
         chain: baseSepolia,
       });
@@ -296,14 +281,7 @@ export default function ChatPage() {
         error instanceof Error ? error.message : "送金に失敗しました",
       );
     }
-  }, [targetAddress, tipAmount, accountAddress]);
-
-  const handleCreateCarWallet = useCallback(async () => {
-    if (!recognitionResult) {
-      return;
-    }
-    await createWallet(recognitionResult);
-  }, [recognitionResult, createWallet]);
+  }, [targetAddress, tipAmount]);
 
   const plateHeadline = recognitionResult
     ? `${recognitionResult.fullText}（信頼度 ${Math.round(recognitionResult.confidence)}%）`
@@ -369,53 +347,8 @@ export default function ChatPage() {
               <div className="mt-3 grid gap-3">
                 <div className="flex items-center justify-between text-xs text-white/70">
                   <span>送信元</span>
-                  <span className="text-white/80">
-                    {accountAddress ? "CarWallet" : "未作成"}
-                  </span>
+                  <span className="text-white/80">EOA</span>
                 </div>
-                {accountAddress && (
-                  <p className="text-[10px] text-white/50 break-all">
-                    {accountAddress}
-                  </p>
-                )}
-                {!owner && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={connect}
-                    disabled={status === "connecting"}
-                  >
-                    {status === "connecting"
-                      ? "ウォレット接続中..."
-                      : "MetaMaskを接続"}
-                  </Button>
-                )}
-                {owner && !accountAddress && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={connect}
-                    disabled={status === "connecting"}
-                  >
-                    {status === "connecting"
-                      ? "CarWallet読込中..."
-                      : "CarWalletを読み込む"}
-                  </Button>
-                )}
-                {!accountAddress && recognitionResult && (
-                  <Button
-                    type="button"
-                    variant="default"
-                    onClick={handleCreateCarWallet}
-                    disabled={status === "proving" || status === "submitting"}
-                  >
-                    {status === "proving" && "ZK証明を生成中..."}
-                    {status === "submitting" && "CarWallet作成中..."}
-                    {status !== "proving" &&
-                      status !== "submitting" &&
-                      "CarWalletを作成"}
-                  </Button>
-                )}
                 <div className="grid gap-1">
                   <label className="text-xs text-white/60">送金先</label>
                   <input

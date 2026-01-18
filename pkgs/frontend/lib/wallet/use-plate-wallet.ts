@@ -180,12 +180,6 @@ export function usePlateWalletCreation(
               console.log("既存のSmart Accountが見つかりました:", predictedAddress);
               return predictedAddress;
             }
-
-            console.warn(
-              "Smart Accountのコードが見つかりませんでしたが、予測アドレスを使用します:",
-              predictedAddress,
-            );
-            return predictedAddress;
           } catch (parseErr) {
             console.error("LocalStorageデータのパースに失敗:", parseErr);
           }
