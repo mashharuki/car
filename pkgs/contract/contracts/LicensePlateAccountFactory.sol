@@ -6,8 +6,8 @@ import "./AccountFactory.sol";
 import "./PrivacyProtectedAccount.sol";
 
 /**
- * @notice Interface for ZK proof verifier (Groth16)
- * @dev Matches the LicensePlateCommitmentVerifier.sol generated from circom circuit
+ * @notice ZK証明検証 (Groth16) のためのインターフェース
+ * @dev circom回路から生成されたLicensePlateCommitmentVerifier.solと一致します
  */
 interface ILicensePlateVerifier {
     function verifyProof(
@@ -20,29 +20,29 @@ interface ILicensePlateVerifier {
 
 /**
  * @title LicensePlateAccountFactory
- * @notice Factory for creating ERC-4337 wallets from vehicle license plates with ZK proof verification
- * @dev Extends AccountFactory with optional ZK proof verification for enhanced privacy
+ * @notice ZK証明検証付きで車両ナンバープレートからERC-4337ウォレットを作成するためのファクトリ
+ * @dev AccountFactoryを拡張し、強化されたプライバシーのためのオプションのZK証明検証を追加します
  *
- * Use Cases:
- * 1. Create wallet from license plate commitment (without ZK proof)
- * 2. Create wallet with ZK proof verification (proves ownership without revealing plate)
+ * ユースケース:
+ * 1. ナンバープレートコミットメントからウォレットを作成 (ZK証明なし)
+ * 2. ZK証明検証付きでウォレットを作成 (ナンバープレートを公開せずに所有権を証明)
  *
- * Privacy Model:
- * - Off-chain: plateNumber + salt → commitment (Poseidon hash)
- * - On-chain: Only commitment is stored, never raw plate number
- * - ZK Proof: Proves knowledge of (plateNumber, salt) without revealing them
+ * プライバシーモデル:
+ * - オフチェーン: plateNumber + salt → commitment (Poseidonハッシュ)
+ * - オンチェーン: コミットメントのみが保存され、生のナンバープレート番号は保存されません
+ * - ZK証明: (plateNumber, salt) を公開せずに知識を証明
  *
- * Integration with Circom:
- * - Circuit: LicensePlateOwnership.circom
- * - Verifier: LicensePlateVerifier.sol (generated from circuit)
- * - Proof: Groth16 proof that commitment(plateNumber, salt) == publicCommitment
+ * Circomとの統合:
+ * - 回路: LicensePlateOwnership.circom
+ * - 検証器: LicensePlateVerifier.sol (回路から生成)
+ * - 証明: commitment(plateNumber, salt) == publicCommitment であることのGroth16証明
  */
 contract LicensePlateAccountFactory is AccountFactory, Ownable {
-    /// @notice ZK verifier contract (if enabled)
-    /// @dev Can be address(0) if ZK verification is not required
+    /// @notice ZK検証コントラクト (有効な場合)
+    /// @dev ZK検証が不要な場合はaddress(0)になることがあります
     address public zkVerifier;
 
-    /// @notice Enable/disable ZK proof requirement
+    /// @notice ZK証明要件の有効化/無効化
     bool public zkProofRequired;
 
     event ZKVerifierUpdated(address indexed oldVerifier, address indexed newVerifier);
@@ -55,13 +55,13 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
     );
 
     constructor(IEntryPoint _entryPoint) AccountFactory(_entryPoint) Ownable(msg.sender) {
-        zkProofRequired = false; // Default: ZK proof not required
+        zkProofRequired = false; // デフォルト: ZK証明は不要
     }
 
     /**
-     * @notice Set ZK verifier contract address
-     * @param _zkVerifier Address of LicensePlateVerifier contract
-     * @dev Only owner can update verifier
+     * @notice ZK検証コントラクトアドレスを設定します
+     * @param _zkVerifier LicensePlateVerifierコントラクトのアドレス
+     * @dev オーナーのみが検証器を更新できます
      */
     function setZKVerifier(address _zkVerifier) external onlyOwner {
         address oldVerifier = zkVerifier;
@@ -70,8 +70,8 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
     }
 
     /**
-     * @notice Enable or disable ZK proof requirement
-     * @param required True to require ZK proof, false otherwise
+     * @notice ZK証明要件を有効化または無効化します
+     * @param required ZK証明が必要な場合はtrue、そうでない場合はfalse
      */
     function setZKProofRequired(bool required) external onlyOwner {
         zkProofRequired = required;
@@ -79,26 +79,26 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
     }
 
     /**
-     * @notice Create account from license plate with optional ZK proof
-     * @param owner The owner address (can be derived from user's wallet)
-     * @param vehicleCommitment Poseidon hash of license plate data (public signal from ZK circuit)
-     * @param salt Salt for deterministic address generation
-     * @param proof ZK proof data (Groth16 proof: a, b, c encoded as bytes)
-     * @return account The created account address
+     * @notice オプションのZK証明を使用してナンバープレートからアカウントを作成します
+     * @param owner オーナーアドレス（ユーザーのウォレットから導出可能）
+     * @param vehicleCommitment ナンバープレートデータのPoseidonハッシュ（ZK回路からの公開シグナル）
+     * @param salt 決定論的なアドレス生成のためのソルト
+     * @param proof ZK証明データ（Groth16証明: a, b, c をバイトとしてエンコード）
+     * @return account 作成されたアカウントアドレス
      *
-     * @dev ZK Proof Integration:
-     *      - If zkProofRequired is true, proof must be a valid Groth16 proof
-     *      - Proof format: abi.encode(uint[2] a, uint[2][2] b, uint[2] c)
-     *      - Public input: vehicleCommitment (Poseidon hash of plateChars[8] + salt)
-     *      - Private inputs (proven): plateChars[8], salt
+     * @dev ZK証明統合:
+     *      - zkProofRequiredがtrueの場合、証明は有効なGroth16証明でなければなりません
+     *      - 証明フォーマット: abi.encode(uint[2] a, uint[2][2] b, uint[2] c)
+     *      - 公開入力: vehicleCommitment (plateChars[8] + salt のPoseidonハッシュ)
+     *      - 秘密入力 (証明される): plateChars[8], salt
      *
-     * Example usage (without ZK):
-     *   // Off-chain: compute Poseidon commitment
+     * 使用例 (ZKなし):
+     *   // オフチェーン: Poseidonコミットメントを計算
      *   const commitment = await poseidon([...plateChars, salt]);
      *   await factory.createAccountFromPlate(owner, commitment, 12345, '0x');
      *
-     * Example usage (with ZK):
-     *   // Off-chain: generate ZK proof
+     * 使用例 (ZKあり):
+     *   // オフチェーン: ZK証明を生成
      *   const input = { plateChars, salt, publicCommitment: commitment };
      *   const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, wasmFile, zkeyFile);
      *   const encodedProof = encodeGroth16Proof(proof); // abi.encode(a, b, c)
@@ -110,38 +110,38 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
         uint256 salt,
         bytes calldata proof
     ) external returns (PrivacyProtectedAccount account) {
-        // If ZK proof is required, verify it
+        // ZK証明が必要な場合、それを検証します
         if (zkProofRequired) {
             require(zkVerifier != address(0), "LicensePlateAccountFactory: ZK verifier not set");
             require(proof.length > 0, "LicensePlateAccountFactory: proof required");
 
-            // Decode Groth16 proof components
+            // Groth16証明コンポーネントをデコード
             (uint[2] memory a, uint[2][2] memory b, uint[2] memory c) =
                 abi.decode(proof, (uint[2], uint[2][2], uint[2]));
 
-            // Public input is the vehicle commitment (Poseidon hash)
+            // 公開入力は車両コミットメント(Poseidonハッシュ)です
             uint[1] memory input;
             input[0] = uint256(vehicleCommitment);
 
-            // Verify ZK proof using the verifier contract
+            // 検証器コントラクトを使用してZK証明を検証
             bool isValid = ILicensePlateVerifier(zkVerifier).verifyProof(a, b, c, input);
             require(isValid, "LicensePlateAccountFactory: invalid proof");
         }
 
-        // Create account using base factory
+        // ベースファクトリを使用してアカウントを作成
         account = createAccount(owner, vehicleCommitment, salt);
 
         emit AccountCreatedWithProof(address(account), owner, vehicleCommitment, salt);
     }
 
     /**
-     * @notice Compute counterfactual address for license plate account
-     * @param owner The owner address
-     * @param vehicleCommitment Hash of license plate data
-     * @param salt Salt for address generation
-     * @return Predicted account address
+     * @notice ナンバープレートアカウントのカウンターファクチュアルアドレスを計算します
+     * @param owner オーナーアドレス
+     * @param vehicleCommitment ナンバープレートデータのハッシュ
+     * @param salt アドレス生成のためのソルト
+     * @return 予測されるアカウントアドレス
      *
-     * @dev Same as base getAddress() but included for clarity
+     * @dev ベースのgetAddress()と同じですが、明確さのために含まれています
      */
     function getAddressFromPlate(
         address owner,
@@ -152,14 +152,14 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
     }
 
     /**
-     * @notice Helper: Compute vehicle commitment (OFF-CHAIN ONLY - DO NOT CALL ON-CHAIN WITH REAL DATA)
-     * @param plateNumber License plate number
-     * @param userSalt User-specific salt
-     * @return Commitment hash
+     * @notice ヘルパー: 車両コミットメントを計算 (オフチェーンのみ - 本物のデータでオンチェーンで呼び出さないでください)
+     * @param plateNumber ナンバープレート番号
+     * @param userSalt ユーザー固有のソルト
+     * @return コミットメントハッシュ
      *
-     * @dev WARNING: This is for testing/reference only
-     *      NEVER call this on-chain with real plate numbers
-     *      Always compute commitment off-chain
+     * @dev 警告: これはテスト/参照のみを目的としています
+     *      本物のナンバープレート番号でこれをオンチェーンで決して呼び出さないでください
+     *      常にオフチェーンでコミットメントを計算してください
      */
     function computePlateCommitment(
         string memory plateNumber,
@@ -169,12 +169,12 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
     }
 
     /**
-     * @notice Batch create accounts from multiple license plates
-     * @param owners Array of owner addresses
-     * @param vehicleCommitments Array of vehicle commitments
-     * @param salts Array of salts
-     * @param proofs Array of ZK proofs (empty array if not required)
-     * @return accounts Array of created account addresses
+     * @notice 複数のナンバープレートからアカウントを一括作成します
+     * @param owners オーナーアドレスの配列
+     * @param vehicleCommitments 車両コミットメントの配列
+     * @param salts ソルトの配列
+     * @param proofs ZK証明の配列（不要な場合は空の配列）
+     * @return accounts 作成されたアカウントアドレスの配列
      */
     function createAccountsFromPlatesBatch(
         address[] calldata owners,

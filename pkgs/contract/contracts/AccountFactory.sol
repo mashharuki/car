@@ -7,22 +7,22 @@ import "./PrivacyProtectedAccount.sol";
 
 /**
  * @title AccountFactory
- * @notice Factory for deploying PrivacyProtectedAccount contracts with deterministic addresses
- * @dev Uses CREATE2 for deterministic address generation based on vehicle data hash
+ * @notice 決定論的なアドレスを持つPrivacyProtectedAccountコントラクトをデプロイするためのファクトリ
+ * @dev CREATE2を使用して、車両データハッシュに基づいて決定論的なアドレス生成を行います
  *
- * Privacy Features:
- * - Deterministic address generation from vehicle commitment (without exposing raw data)
- * - Predictable addresses across all EVM chains
- * - No storage of sensitive vehicle information
+ * プライバシー機能:
+ * - 車両コミットメントから決定論的なアドレス生成（生データを公開することなく）
+ * - 全てのEVMチェーンで予測可能なアドレス
+ * - センシティブな車両情報の保存なし
  *
- * Usage Pattern:
- * 1. Off-chain: Compute vehicle commitment = keccak256(abi.encodePacked(plateNumber, salt))
- * 2. Off-chain: Derive owner address (e.g., from vehicle data + user seed)
- * 3. Call: createAccount(owner, vehicleCommitment, salt)
- * 4. Result: Get deterministic account address
+ * 使用パターン:
+ * 1. オフチェーン: 車両コミットメントを計算 = keccak256(abi.encodePacked(plateNumber, salt))
+ * 2. オフチェーン: オーナーアドレスを導出（例: 車両データ + ユーザーシードから）
+ * 3. 呼び出し: createAccount(owner, vehicleCommitment, salt)
+ * 4. 結果: 決定論的なアカウントアドレスを取得
  */
 contract AccountFactory {
-    /// @notice Implementation contract for proxies
+    /// @notice プロキシの実装コントラクト
     PrivacyProtectedAccount public immutable accountImplementation;
 
     event AccountCreated(
@@ -37,16 +37,16 @@ contract AccountFactory {
     }
 
     /**
-     * @notice Create an account with deterministic address
-     * @param owner The owner address
-     * @param vehicleCommitment Hash of vehicle data (keccak256(abi.encodePacked(plateNumber, userSalt)))
-     * @param salt Additional salt for address generation
-     * @return account The created account address
+     * @notice 決定論的なアドレスでアカウントを作成します
+     * @param owner オーナーアドレス
+     * @param vehicleCommitment 車両データのハッシュ (keccak256(abi.encodePacked(plateNumber, userSalt)))
+     * @param salt アドレス生成のための追加ソルト
+     * @return account 作成されたアカウントアドレス
      *
-     * @dev Security Notes:
-     * - vehicleCommitment should NEVER be the raw plate number
-     * - salt adds an extra layer of privacy by making commitment unique per user
-     * - Same (owner, vehicleCommitment, salt) triplet always produces same address
+     * @dev セキュリティ上の注意:
+     * - vehicleCommitmentは決して生のナンバープレート番号であってはなりません
+     * - saltはコミットメントをユーザーごとにユニークにすることで、プライバシーの層を追加します
+     * - 同じ (owner, vehicleCommitment, salt) の組み合わせは常に同じアドレスを生成します
      */
     function createAccount(
         address owner,
@@ -76,14 +76,14 @@ contract AccountFactory {
     }
 
     /**
-     * @notice Compute the counterfactual address of an account
-     * @param owner The owner address
-     * @param vehicleCommitment Hash of vehicle data
-     * @param salt Salt for address generation
-     * @return The counterfactual address
+     * @notice アカウントのカウンターファクチュアルアドレスを計算します
+     * @param owner オーナーアドレス
+     * @param vehicleCommitment 車両データのハッシュ
+     * @param salt アドレス生成のためのソルト
+     * @return カウンターファクチュアルアドレス
      *
-     * @dev Can be called off-chain to know the address before deployment
-     *      Useful for receiving funds before account creation
+     * @dev デプロイ前にアドレスを知るためにオフチェーンで呼び出すことができます
+     *      アカウント作成前に資金を受け取るのに便利です
      */
     function getAddress(
         address owner,
@@ -109,14 +109,14 @@ contract AccountFactory {
     }
 
     /**
-     * @notice Helper function to compute vehicle commitment off-chain pattern
-     * @param plateNumber Vehicle license plate number
-     * @param userSalt User-specific salt for privacy
-     * @return Commitment hash
+     * @notice 車両コミットメントを計算するためのヘルパー関数（オフチェーンパターン）
+     * @param plateNumber 車両のナンバープレート番号
+     * @param userSalt プライバシーのためのユーザー固有のソルト
+     * @return コミットメントハッシュ
      *
-     * @dev WARNING: Do NOT call this on-chain with real plate numbers
-     *      This is a reference implementation for off-chain computation
-     *      Use this pattern in your frontend/backend:
+     * @dev 警告: 本物のナンバープレート番号でこれをオンチェーンで呼び出さないでください
+     *      これはオフチェーン計算のための参照実装です
+     *      フロントエンド/バックエンドでこのパターンを使用してください:
      *      - commitment = keccak256(abi.encodePacked(plateNumber, userSalt))
      */
     function computeVehicleCommitment(
@@ -127,11 +127,11 @@ contract AccountFactory {
     }
 
     /**
-     * @notice Batch create accounts for multiple vehicles
-     * @param owners Array of owner addresses
-     * @param vehicleCommitments Array of vehicle commitments
-     * @param salts Array of salts
-     * @return accounts Array of created account addresses
+     * @notice 複数の車両用のアカウントを一括作成します
+     * @param owners オーナーアドレスの配列
+     * @param vehicleCommitments 車両コミットメントの配列
+     * @param salts ソルトの配列
+     * @return accounts 作成されたアカウントアドレスの配列
      */
     function createAccountBatch(
         address[] calldata owners,
@@ -158,11 +158,11 @@ contract AccountFactory {
     }
 
     /**
-     * @notice Get addresses for batch creation (counterfactual)
-     * @param owners Array of owner addresses
-     * @param vehicleCommitments Array of vehicle commitments
-     * @param salts Array of salts
-     * @return addresses Array of counterfactual addresses
+     * @notice 一括作成用のアドレスを取得します（カウンターファクチュアル）
+     * @param owners オーナーアドレスの配列
+     * @param vehicleCommitments 車両コミットメントの配列
+     * @param salts ソルトの配列
+     * @return addresses カウンターファクチュアルアドレスの配列
      */
     function getAddressBatch(
         address[] calldata owners,

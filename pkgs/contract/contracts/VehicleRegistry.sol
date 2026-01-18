@@ -5,37 +5,37 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title VehicleRegistry
- * @notice Privacy-preserving registry for vehicle-to-wallet mappings
- * @dev Stores only commitments and metadata, never raw vehicle identification data
+ * @notice 車両とウォレットのマッピングのためのプライバシー保護レジストリ
+ * @dev コミットメントとメタデータのみを保存し、けっして生の車両識別データを保存しません
  *
- * Privacy Design:
- * - Stores vehicle commitment (hash) instead of actual plate number
- * - Supports ZK-proof verification (extensible)
- * - Enables selective disclosure of vehicle attributes
- * - No reverse lookup from commitment to raw data possible
+ * プライバシー設計:
+ * - 実際のナンバープレート番号の代わりに車両コミットメント（ハッシュ）を保存
+ * - ZK証明検証をサポート（拡張可能）
+ * - 車両属性の選択的開示を有効化
+ * - コミットメントから生データへの逆引き不可
  *
- * Use Cases:
- * - Verify vehicle ownership without revealing plate number
- * - Link vehicle to wallet address privately
- * - Enable privacy-preserving vehicle services (parking, tolls, insurance)
- * - Support regulatory compliance with privacy protection
+ * ユースケース:
+ * - ナンバープレート番号を明かすことなく車両所有権を検証
+ * - 車両をウォレットアドレスにプライベートにリンク
+ * - プライバシー保護車両サービス（駐車場、通行料、保険）を有効化
+ * - プライバシー保護に関する規制コンプライアンスをサポート
  */
 contract VehicleRegistry is Ownable {
     struct VehicleRecord {
         bytes32 commitment; // keccak256(abi.encodePacked(plateNumber, salt))
-        address walletAddress; // Associated AA wallet
-        uint256 registeredAt; // Registration timestamp
-        bool isActive; // Status flag
-        bytes32 metadataHash; // Hash of additional metadata (model, year, etc.)
+        address walletAddress; // 関連するAAウォレット
+        uint256 registeredAt; // 登録タイムスタンプ
+        bool isActive; // ステータスフラグ
+        bytes32 metadataHash; // 追加メタデータのハッシュ（モデル、年式など）
     }
 
-    /// @notice Mapping from commitment to vehicle record
+    /// @notice コミットメントから車両レコードへのマッピング
     mapping(bytes32 => VehicleRecord) public vehicles;
 
-    /// @notice Mapping from wallet address to commitment (one-to-one)
+    /// @notice ウォレットアドレスからコミットメントへのマッピング（1対1）
     mapping(address => bytes32) public walletToVehicle;
 
-    /// @notice Authorized verifiers (e.g., parking operators, toll systems)
+    /// @notice 認可された検証者（例: 駐車場運営者、料金徴収システム）
     mapping(address => bool) public authorizedVerifiers;
 
     event VehicleRegistered(
@@ -68,13 +68,13 @@ contract VehicleRegistry is Ownable {
     constructor() Ownable(msg.sender) {}
 
     /**
-     * @notice Register a vehicle with its commitment
-     * @param commitment Hash of vehicle data (keccak256(abi.encodePacked(plateNumber, salt)))
-     * @param walletAddress Associated AA wallet address
-     * @param metadataHash Hash of vehicle metadata (optional)
+     * @notice 車両をそのコミットメントとともに登録します
+     * @param commitment 車両データのハッシュ (keccak256(abi.encodePacked(plateNumber, salt)))
+     * @param walletAddress 関連するAAウォレットアドレス
+     * @param metadataHash 車両メタデータのハッシュ（オプション）
      *
-     * @dev CRITICAL: commitment must be computed off-chain
-     *      Never pass raw plate number to any on-chain function
+     * @dev 重要: コミットメントはオフチェーンで計算されなければなりません
+     *      生のナンバープレート番号をオンチェーン関数に渡さないでください
      */
     function registerVehicle(
         bytes32 commitment,
@@ -106,11 +106,11 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Update vehicle commitment (e.g., when changing privacy parameters)
-     * @param oldCommitment Current commitment
-     * @param newCommitment New commitment
+     * @notice 車両コミットメントを更新します（例: プライバシーパラメータを変更する場合）
+     * @param oldCommitment 現在のコミットメント
+     * @param newCommitment 新しいコミットメント
      *
-     * @dev Only the associated wallet can update
+     * @dev 関連するウォレットのみが更新可能
      */
     function updateVehicleCommitment(
         bytes32 oldCommitment,
@@ -132,7 +132,7 @@ contract VehicleRegistry is Ownable {
         address walletAddress = vehicles[oldCommitment].walletAddress;
         VehicleRecord memory record = vehicles[oldCommitment];
 
-        // Create new record
+        // 新しいレコードを作成
         vehicles[newCommitment] = VehicleRecord({
             commitment: newCommitment,
             walletAddress: walletAddress,
@@ -141,20 +141,20 @@ contract VehicleRegistry is Ownable {
             metadataHash: record.metadataHash
         });
 
-        // Deactivate old record
+        // 古いレコードを無効化
         vehicles[oldCommitment].isActive = false;
 
-        // Update reverse mapping
+        // 逆引きマッピングを更新
         walletToVehicle[walletAddress] = newCommitment;
 
         emit VehicleUpdated(oldCommitment, newCommitment, walletAddress);
     }
 
     /**
-     * @notice Deactivate a vehicle record
-     * @param commitment Vehicle commitment to deactivate
+     * @notice 車両レコードを無効化します
+     * @param commitment 無効化する車両コミットメント
      *
-     * @dev Only the associated wallet can deactivate
+     * @dev 関連するウォレットのみが無効化可能
      */
     function deactivateVehicle(bytes32 commitment) external {
         require(
@@ -173,9 +173,9 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Verify if a commitment is registered and active
-     * @param commitment Vehicle commitment to verify
-     * @return isRegistered True if registered and active
+     * @notice コミットメントが登録済みでアクティブかどうか検証します
+     * @param commitment 検証する車両コミットメント
+     * @return isRegistered 登録済みかつアクティブならtrue
      */
     function verifyVehicleRegistration(bytes32 commitment)
         external
@@ -187,11 +187,11 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Get vehicle record by commitment
-     * @param commitment Vehicle commitment
-     * @return record Vehicle record
+     * @notice コミットメントによる車両レコードを取得します
+     * @param commitment 車両コミットメント
+     * @return record 車両レコード
      *
-     * @dev Only authorized verifiers can access
+     * @dev 認可された検証者のみがアクセス可能
      */
     function getVehicleRecord(bytes32 commitment)
         external
@@ -207,9 +207,9 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Get commitment by wallet address
-     * @param walletAddress Wallet address
-     * @return commitment Vehicle commitment
+     * @notice ウォレットアドレスによるコミットメントを取得します
+     * @param walletAddress ウォレットアドレス
+     * @return commitment 車両コミットメント
      */
     function getCommitmentByWallet(address walletAddress)
         external
@@ -224,12 +224,12 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Verify vehicle ownership with proof
-     * @param commitment Claimed vehicle commitment
-     * @param walletAddress Claimed wallet address
-     * @return isValid True if claim is valid
+     * @notice 証明を使用して車両所有権を検証します
+     * @param commitment 主張する車両コミットメント
+     * @param walletAddress 主張するウォレットアドレス
+     * @return isValid 主張が有効ならtrue
      *
-     * @dev This is a simple verification. For ZK proofs, extend this function
+     * @dev これは単純な検証です。ZK証明の場合、この関数を拡張してください
      */
     function verifyOwnership(
         bytes32 commitment,
@@ -240,11 +240,11 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Authorize or revoke verifier
-     * @param verifier Address to authorize/revoke
-     * @param authorized True to authorize, false to revoke
+     * @notice 検証者を認可または取り消しします
+     * @param verifier 認可/取り消しするアドレス
+     * @param authorized 認可する場合はtrue、取り消す場合はfalse
      *
-     * @dev Only owner can manage verifiers
+     * @dev オーナーのみが検証者を管理可能
      */
     function setVerifierAuthorization(address verifier, bool authorized)
         external
@@ -255,10 +255,10 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Batch register vehicles
-     * @param commitments Array of vehicle commitments
-     * @param walletAddresses Array of wallet addresses
-     * @param metadataHashes Array of metadata hashes
+     * @notice 車両を一括登録します
+     * @param commitments 車両コミットメントの配列
+     * @param walletAddresses ウォレットアドレスの配列
+     * @param metadataHashes メタデータハッシュの配列
      */
     function registerVehicleBatch(
         bytes32[] calldata commitments,
@@ -272,8 +272,8 @@ contract VehicleRegistry is Ownable {
         );
 
         for (uint256 i = 0; i < commitments.length; i++) {
-            // Note: This will revert if any registration fails
-            // Consider implementing a version that continues on error if needed
+            // 注意: 登録に失敗した場合、これはリバートします
+            // 必要に応じてエラー時に継続するバージョンの実装を検討してください
             this.registerVehicle(
                 commitments[i],
                 walletAddresses[i],
@@ -283,9 +283,9 @@ contract VehicleRegistry is Ownable {
     }
 
     /**
-     * @notice Update metadata hash for a vehicle
-     * @param commitment Vehicle commitment
-     * @param newMetadataHash New metadata hash
+     * @notice 車両のメタデータハッシュを更新します
+     * @param commitment 車両コミットメント
+     * @param newMetadataHash 新しいメタデータハッシュ
      */
     function updateMetadata(bytes32 commitment, bytes32 newMetadataHash)
         external

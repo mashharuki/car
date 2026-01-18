@@ -1,28 +1,39 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 /**
- * Hardhat Ignition Module for ERC-4337 License Plate Wallet System
+ * ERC-4337ナンバープレートウォレットシステム用Hardhat Ignitionモジュール
  *
- * Deploys:
- * 1. AccountFactory - Base factory for PrivacyProtectedAccount
- * 2. LicensePlateAccountFactory - Extended factory with ZK proof support
- * 3. VehicleRegistry - Optional registry for vehicle-to-wallet mappings
+ * デプロイ内容:
+ * 1. AccountFactory - PrivacyProtectedAccountのベースファクトリ
+ * 2. LicensePlateCommitmentVerifier - ZK証明検証器 (Groth16)
+ * 3. LicensePlateAccountFactory - ZK証明サポート付き拡張ファクトリ
+ * 4. VehicleRegistry - 車両とウォレットのマッピングのためのオプションのレジストリ
  *
- * Network: Base Sepolia (testnet) / Base Mainnet
+ * ネットワーク: Base Sepolia (テストネット) / Base Mainnet
  * EntryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789 (ERC-4337 v0.6)
+ *
+ * ZK回路: LicensePlateOwnership.circom
+ * - 公開入力: publicCommitment (Poseidonハッシュ)
+ * - 秘密入力: plateChars[8], salt
+ * - 証明内容: Poseidon(plateChars, salt) == publicCommitment
  */
 const LicensePlateAccountFactoryModule = buildModule(
   "LicensePlateAccountFactoryModule",
   (m) => {
-    // EntryPoint address (official ERC-4337 v0.6 - same on all networks)
+    // EntryPointアドレス（公式 ERC-4337 v0.6 - 全ネットワーク共通）
     const ENTRYPOINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 
-    // Deploy AccountFactory
+    // AccountFactoryをデプロイ
     const accountFactory = m.contract("AccountFactory", [ENTRYPOINT_ADDRESS], {
       id: "AccountFactory",
     });
 
-    // Deploy LicensePlateAccountFactory
+    // ZK検証器(Groth16)をデプロイ
+    const zkVerifier = m.contract("LicensePlateCommitmentVerifier", [], {
+      id: "LicensePlateCommitmentVerifier",
+    });
+
+    // LicensePlateAccountFactoryをデプロイ
     const licensePlateAccountFactory = m.contract(
       "LicensePlateAccountFactory",
       [ENTRYPOINT_ADDRESS],
@@ -31,13 +42,17 @@ const LicensePlateAccountFactoryModule = buildModule(
       }
     );
 
-    // Deploy VehicleRegistry
+    // VehicleRegistryをデプロイ
     const vehicleRegistry = m.contract("VehicleRegistry", [], {
       id: "VehicleRegistry",
     });
 
+    // オプション: ファクトリにZK検証器を設定（デプロイ後に実行可能）
+    m.call(licensePlateAccountFactory, "setZKVerifier", [zkVerifier]);
+
     return {
       accountFactory,
+      zkVerifier,
       licensePlateAccountFactory,
       vehicleRegistry,
     };

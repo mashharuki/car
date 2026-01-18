@@ -9,38 +9,38 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title PrivacyProtectedAccount
- * @notice ERC-4337 compliant account with privacy-preserving features for vehicle identity
- * @dev Protects sensitive vehicle information (license plate numbers) by storing only commitments on-chain
+ * @notice 車両IDのプライバシー保護機能を備えたERC-4337準拠のアカウント
+ * @dev センシティブな車両情報（ナンバープレート番号）を保護し、チェーン上にはコミットメントのみを保存します
  *
- * Security Features:
- * - Stores only keccak256 hash of sensitive data, never raw values
- * - Implements ERC-4337 account abstraction for flexible authentication
- * - Supports deterministic address generation
- * - Enables zero-knowledge proof verification (extensible)
+ * セキュリティ機能:
+ * - センシティブなデータのkeccak256ハッシュのみを保存し、決して生の値を保存しません
+ * - 柔軟な認証のためにERC-4337アカウントアブストラクションを実装
+ * - 決定論的なアドレス生成をサポート
+ * - ゼロ知識証明検証をサポート（拡張可能）
  *
- * Privacy Model:
- * - Vehicle number plate → hash → stored on-chain
- * - Owner can prove possession without revealing actual plate number
- * - Optional: Can integrate ZK-SNARK circuits for selective disclosure
+ * プライバシーモデル:
+ * - 車両ナンバープレート → ハッシュ → オンチェーン保存
+ * - オーナーは実際のナンバープレート番号を明かすことなく所有を証明可能
+ * - オプション: 選択的開示のためのZK-SNARK回路を統合可能
  */
 contract PrivacyProtectedAccount is BaseAccount, Initializable {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    /// @notice The EntryPoint contract address (singleton)
+    /// @notice EntryPointコントラクトアドレス (シングルトン)
     IEntryPoint private immutable _entryPoint;
 
-    /// @notice Owner's EOA address (can be derived from vehicle data)
+    /// @notice オーナーのEOAアドレス（車両データから導出可能）
     address public owner;
 
-    /// @notice Commitment to sensitive vehicle data (keccak256 hash)
-    /// @dev Never store raw vehicle number plate on-chain
+    /// @notice センシティブな車両データへのコミットメント (keccak256ハッシュ)
+    /// @dev Rawの車両ナンバープレートをオンチェーンに決して保存しないこと
     bytes32 public vehicleCommitment;
 
-    /// @notice Optional: Secondary authentication factor
+    /// @notice オプション: 二次認証要素
     bytes32 public secondaryCommitment;
 
-    /// @notice Nonce for replay protection
+    /// @notice リプレイ保護のためのナンス
     uint256 private _nonce;
 
     event PrivacyProtectedAccountInitialized(
@@ -77,10 +77,10 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Initialize the account with owner and vehicle commitment
-     * @param anOwner The owner address (can be deterministically derived from vehicle data)
-     * @param aVehicleCommitment Hash of vehicle data (e.g., keccak256(abi.encodePacked(plateNumber, salt)))
-     * @dev CRITICAL: Never pass raw vehicle data to this function
+     * @notice オーナーと車両コミットメントでアカウントを初期化します
+     * @param anOwner オーナーアドレス（車両データから決定論的に導出可能）
+     * @param aVehicleCommitment 車両データのハッシュ (例: keccak256(abi.encodePacked(plateNumber, salt)))
+     * @dev 重要: この関数に決して生の車両データを渡さないでください
      */
     function initialize(address anOwner, bytes32 aVehicleCommitment) public virtual {
         _initialize(anOwner, aVehicleCommitment);
@@ -98,9 +98,9 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Update vehicle commitment (e.g., when vehicle ownership changes)
-     * @param newCommitment New commitment hash
-     * @dev Only callable by owner or through EntryPoint
+     * @notice 車両コミットメントを更新します（例: 車両の所有者が変わった場合）
+     * @param newCommitment 新しいコミットメントハッシュ
+     * @dev オーナーまたはEntryPointからのみ呼び出し可能
      */
     function updateVehicleCommitment(bytes32 newCommitment) external onlyOwner {
         require(newCommitment != bytes32(0), "account: commitment cannot be zero");
@@ -112,12 +112,12 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Verify that a given preimage matches the stored commitment
-     * @param plateNumber The vehicle plate number (sensitive data)
-     * @param salt Random salt used during commitment
-     * @return True if commitment matches
-     * @dev WARNING: This reveals the plate number on-chain if called in a transaction
-     *      Only use in view/pure contexts or with additional privacy layers (e.g., ZK proofs)
+     * @notice 与えられたプリイメージが保存されたコミットメントと一致するか検証します
+     * @param plateNumber 車両のナンバープレート番号（センシティブデータ）
+     * @param salt コミットメント中に使用されたランダムソルト
+     * @return コミットメントが一致すればtrue
+     * @dev 警告: トランザクション内で呼び出された場合、オンチェーンでナンバープレート番号が公開されます
+     *      view/pureコンテキストまたは追加のプライバシーレイヤー（例: ZK証明）でのみ使用してください
      */
     function verifyVehicleOwnership(
         string memory plateNumber,
@@ -142,10 +142,10 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Execute a call from this account
-     * @param dest Destination address
-     * @param value Amount of ETH to send
-     * @param func Calldata
+     * @notice このアカウントからの呼び出しを実行します
+     * @param dest 宛先アドレス
+     * @param value 送信するETHの量
+     * @param func コールデータ
      */
     function execute(
         address dest,
@@ -157,10 +157,10 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Execute a batch of calls from this account
-     * @param dest Array of destination addresses
-     * @param value Array of ETH amounts
-     * @param func Array of calldata
+     * @notice このアカウントからの一括呼び出しを実行します
+     * @param dest 宛先アドレスの配列
+     * @param value ETH量の配列
+     * @param func コールデータの配列
      */
     function executeBatch(
         address[] calldata dest,
@@ -195,16 +195,16 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Deposit funds to EntryPoint for gas payments
+     * @notice ガス支払いのためにEntryPointに資金を預け入れます
      */
     function addDeposit() public payable {
         entryPoint().depositTo{value: msg.value}(address(this));
     }
 
     /**
-     * @notice Withdraw funds from EntryPoint
-     * @param withdrawAddress Address to receive withdrawn funds
-     * @param amount Amount to withdraw
+     * @notice EntryPointから資金を引き出します
+     * @param withdrawAddress 引き出した資金を受け取るアドレス
+     * @param amount 引き出す量
      */
     function withdrawDepositTo(
         address payable withdrawAddress,
@@ -221,14 +221,14 @@ contract PrivacyProtectedAccount is BaseAccount, Initializable {
     }
 
     /**
-     * @notice Get deposit info from EntryPoint
+     * @notice EntryPointからデポジット情報を取得します
      */
     function getDeposit() public view returns (uint256) {
         return entryPoint().balanceOf(address(this));
     }
 
     /**
-     * @notice Accept ETH transfers
+     * @notice ETH転送を受け入れます
      */
     receive() external payable {}
 }
