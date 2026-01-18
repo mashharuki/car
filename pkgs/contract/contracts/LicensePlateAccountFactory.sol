@@ -6,6 +6,19 @@ import "./AccountFactory.sol";
 import "./PrivacyProtectedAccount.sol";
 
 /**
+ * @notice Interface for ZK proof verifier (Groth16)
+ * @dev Matches the LicensePlateCommitmentVerifier.sol generated from circom circuit
+ */
+interface ILicensePlateVerifier {
+    function verifyProof(
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[1] memory input
+    ) external view returns (bool);
+}
+
+/**
  * @title LicensePlateAccountFactory
  * @notice Factory for creating ERC-4337 wallets from vehicle license plates with ZK proof verification
  * @dev Extends AccountFactory with optional ZK proof verification for enhanced privacy
@@ -68,21 +81,27 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
     /**
      * @notice Create account from license plate with optional ZK proof
      * @param owner The owner address (can be derived from user's wallet)
-     * @param vehicleCommitment Hash of license plate data
+     * @param vehicleCommitment Poseidon hash of license plate data (public signal from ZK circuit)
      * @param salt Salt for deterministic address generation
-     * @param proof ZK proof data (empty if not required)
+     * @param proof ZK proof data (Groth16 proof: a, b, c encoded as bytes)
      * @return account The created account address
      *
-     * @dev If zkProofRequired is true, proof must be valid
-     *      If zkProofRequired is false, proof is ignored (can be empty)
+     * @dev ZK Proof Integration:
+     *      - If zkProofRequired is true, proof must be a valid Groth16 proof
+     *      - Proof format: abi.encode(uint[2] a, uint[2][2] b, uint[2] c)
+     *      - Public input: vehicleCommitment (Poseidon hash of plateChars[8] + salt)
+     *      - Private inputs (proven): plateChars[8], salt
      *
      * Example usage (without ZK):
-     *   const commitment = ethers.keccak256(ethers.solidityPacked(['string', 'bytes32'], [plateNumber, salt]));
+     *   // Off-chain: compute Poseidon commitment
+     *   const commitment = await poseidon([...plateChars, salt]);
      *   await factory.createAccountFromPlate(owner, commitment, 12345, '0x');
      *
      * Example usage (with ZK):
-     *   const { proof, publicSignals } = await generateZKProof(plateNumber, salt);
-     *   const encodedProof = encodeProof(proof); // Encode as per verifier interface
+     *   // Off-chain: generate ZK proof
+     *   const input = { plateChars, salt, publicCommitment: commitment };
+     *   const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, wasmFile, zkeyFile);
+     *   const encodedProof = encodeGroth16Proof(proof); // abi.encode(a, b, c)
      *   await factory.createAccountFromPlate(owner, publicSignals[0], 12345, encodedProof);
      */
     function createAccountFromPlate(
@@ -96,18 +115,17 @@ contract LicensePlateAccountFactory is AccountFactory, Ownable {
             require(zkVerifier != address(0), "LicensePlateAccountFactory: ZK verifier not set");
             require(proof.length > 0, "LicensePlateAccountFactory: proof required");
 
-            // Verify ZK proof
-            // Note: The actual verification interface depends on the generated verifier contract
-            // This is a placeholder - actual implementation should match LicensePlateVerifier.sol
-            (bool success, bytes memory result) = zkVerifier.staticcall(
-                abi.encodeWithSignature(
-                    "verifyProof(bytes,bytes32)",
-                    proof,
-                    vehicleCommitment
-                )
-            );
+            // Decode Groth16 proof components
+            (uint[2] memory a, uint[2][2] memory b, uint[2] memory c) =
+                abi.decode(proof, (uint[2], uint[2][2], uint[2]));
 
-            require(success && abi.decode(result, (bool)), "LicensePlateAccountFactory: invalid proof");
+            // Public input is the vehicle commitment (Poseidon hash)
+            uint[1] memory input;
+            input[0] = uint256(vehicleCommitment);
+
+            // Verify ZK proof using the verifier contract
+            bool isValid = ILicensePlateVerifier(zkVerifier).verifyProof(a, b, c, input);
+            require(isValid, "LicensePlateAccountFactory: invalid proof");
         }
 
         // Create account using base factory

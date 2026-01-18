@@ -3,82 +3,82 @@ pragma circom 2.0.0;
 include "../node_modules/circomlib/circuits/poseidon.circom";
 
 /**
- * LicensePlateCommitment - Generate commitment from license plate number
+ * LicensePlateCommitment - 車両ナンバープレート番号からコミットメントを生成
  *
- * This circuit creates a privacy-preserving commitment from a vehicle's license plate
- * using Poseidon hash. The commitment can be used to create deterministic ERC-4337
- * wallet addresses without revealing the actual plate number on-chain.
+ * この回路は、Poseidonハッシュを使用して、車両のナンバープレートからプライバシーを保護した
+ * コミットメントを作成します。このコミットメントを使用すると、実際のナンバープレート番号を
+ * オンチェーンで公開することなく、決定論的なERC-4337ウォレットアドレスを作成できます。
  *
- * Privacy Design:
- * - Input: plateChars (8 field elements) + salt (1 field element)
- * - Output: commitment (Poseidon hash)
- * - The plate number is never revealed on-chain, only the commitment
+ * プライバシー設計:
+ * - 入力: plateChars (8つのフィールド要素) + salt (1つのフィールド要素)
+ * - 出力: commitment (Poseidonハッシュ)
+ * - ナンバープレート番号はオンチェーンで公開されず、コミットメントのみが公開されます
  *
- * Japanese License Plate Format:
- * - Region (地名): e.g., 品川 (Shinagawa)
- * - Classification (分類番号): e.g., 330
- * - Hiragana (ひらがな): e.g., あ
- * - Serial Number (一連番号): e.g., 1234
- * - Example: 品川330あ1234 (max 8 characters after encoding)
+ * 日本のナンバープレート形式:
+ * - 地域 (地名): 例: 品川
+ * - 分類 (分類番号): 例: 330
+ * - ひらがな: 例: あ
+ * - 一連番号: 例: 1234
+ * - 例: 品川330あ1234 (エンコード後は最大8文字)
  */
 template LicensePlateCommitment() {
-    // Input signals
-    signal input plateChars[8];  // License plate as 8 field elements (UTF-8 encoded)
-    signal input salt;            // Random salt for privacy
+    // 入力シグナル
+    signal input plateChars[8];  // 8つのフィールド要素としてのナンバープレート (UTF-8エンコード)
+    signal input salt;            // プライバシーのためのランダムなソルト
 
-    // Output signal
+    // 出力シグナル
     signal output commitment;
 
-    // Use Poseidon hash with 9 inputs (8 chars + 1 salt)
+    // 9つの入力 (8文字 + 1ソルト) でPoseidonハッシュを使用
     component hash = Poseidon(9);
 
-    // Feed plate characters
+    // ナンバープレートの文字を入力
     for (var i = 0; i < 8; i++) {
         hash.inputs[i] <== plateChars[i];
     }
 
-    // Feed salt as the last input
+    // ソルトを最後の入力として供給
     hash.inputs[8] <== salt;
 
-    // Output the commitment
+    // コミットメントを出力
     commitment <== hash.out;
 }
 
 /**
- * LicensePlateOwnership - Prove ownership of a license plate without revealing it
+ * LicensePlateOwnership - ナンバープレートを公開せずに所有権を証明する
  *
- * This circuit proves that the prover knows a license plate number that matches
- * a public commitment, without revealing the actual plate number.
+ * この回路は、証明者が公開されたコミットメントと一致するナンバープレート番号を知っていることを、
+ * 実際のナンバープレート番号を明かすことなく証明します。
  *
- * Public inputs:
- * - publicCommitment: The commitment stored on-chain
+ * 公開入力:
+ * - publicCommitment: オンチェーンに保存されたコミットメント
  *
- * Private inputs:
- * - plateChars: The actual license plate (secret)
- * - salt: The salt used to generate the commitment (secret)
+ * 秘密入力:
+ * - plateChars: 実際のナンバープレート (秘密)
+ * - salt: コミットメント生成に使用されたソルト (秘密)
  *
- * The circuit verifies: commitment(plateChars, salt) == publicCommitment
+ * 回路の検証内容: commitment(plateChars, salt) == publicCommitment
  */
 template LicensePlateOwnership() {
-    // Private inputs
+    // 秘密入力
     signal input plateChars[8];
     signal input salt;
 
-    // Public input
+    // 公開入力
     signal input publicCommitment;
 
-    // Generate commitment from private inputs
+    // 秘密入力からコミットメントを生成
     component commitmentGenerator = LicensePlateCommitment();
     for (var i = 0; i < 8; i++) {
         commitmentGenerator.plateChars[i] <== plateChars[i];
     }
     commitmentGenerator.salt <== salt;
 
-    // Verify that generated commitment matches public commitment
+    // 生成されたコミットメントが公開コミットメントと一致することを検証
     publicCommitment === commitmentGenerator.commitment;
 }
 
-// Main component: Prove ownership without revealing plate number
-// Public: publicCommitment
-// Private: plateChars, salt
+// メインコンポーネント: ナンバープレート番号を公開せずに所有権を証明
+// 公開: publicCommitment
+// 秘密: plateChars, salt
 component main {public [publicCommitment]} = LicensePlateOwnership();
