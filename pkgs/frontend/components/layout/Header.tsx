@@ -11,6 +11,7 @@
 
 import ShinyText from "@/components/ui/react-bits/ShinyText";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet/wallet-context";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -51,6 +52,10 @@ export function Header({
   className,
 }: HeaderProps) {
   const router = useRouter();
+  const { owner, status, connect } = useWallet();
+
+  const formatAddress = (address: string) =>
+    `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   const handleBack = () => {
     router.back();
@@ -94,6 +99,28 @@ export function Header({
             title
           )}
         </h1>
+        <div className="ml-auto flex items-center gap-2">
+          {owner ? (
+            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-600">
+              {formatAddress(owner)}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={connect}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium",
+                "bg-primary text-primary-foreground",
+                "hover:bg-primary/90",
+                "transition-colors duration-200",
+                "disabled:opacity-60",
+              )}
+              disabled={status === "connecting"}
+            >
+              {status === "connecting" ? "接続中..." : "Connect Wallet"}
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

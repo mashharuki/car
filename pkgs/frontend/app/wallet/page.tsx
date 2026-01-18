@@ -13,63 +13,155 @@
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import DecryptedText from "@/components/ui/react-bits/DecryptedText";
 import ShinyText from "@/components/ui/react-bits/ShinyText";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet/wallet-context";
 import { ArrowDownLeft, ArrowUpRight, Clock, Wallet } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // ============================================================================
 // ダミーデータ
 // ============================================================================
 
-const DUMMY_TRANSACTIONS = [
-  {
-    id: "1",
-    type: "receive" as const,
-    amount: "+¥500",
-    description: "投げ銭を受け取りました",
-    time: "2分前",
-  },
-  {
-    id: "2",
-    type: "send" as const,
-    amount: "-¥100",
-    description: "投げ銭を送りました",
-    time: "1時間前",
-  },
-  {
-    id: "3",
-    type: "receive" as const,
-    amount: "+¥1,000",
-    description: "駐車場料金の払い戻し",
-    time: "昨日",
-  },
-];
+const BLOCKSCOUT_BASE_URL = process.env.NEXT_PUBLIC_BLOCKSCOUT_BASE_URL || "https://base-sepolia.blockscout.com";
+
+type BlockscoutTokenTransfer = {
+  transaction_hash: string;
+  timestamp: string;
+  from: { hash: string };
+  to: { hash: string };
+  total: {
+    value: string;
+    decimals: string;
+  };
+  token: {
+    symbol: string;
+    name: string;
+    address_hash: string;
+  };
+  token_type: string;
+  type: string;
+};
+
+type WalletTransaction = {
+  id: string;
+  type: "receive" | "send";
+  amount: string;
+  description: string;
+  time: string;
+};
 
 // ============================================================================
 // コンポーネント
 // ============================================================================
 
 export default function WalletPage() {
+  const { owner, accountAddress, balance, tokenBalance, tokenSymbol, refreshBalance, status } = useWallet();
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [isLoadingTx, setIsLoadingTx] = useState(false);
+  const [txError, setTxError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (owner || accountAddress) {
+      refreshBalance();
+    }
+  }, [owner, accountAddress, refreshBalance]);
+
+  useEffect(() => {
+    // const targetAddress = accountAddress || owner;
+    const targetAddress = accountAddress || owner;
+
+    if (!targetAddress) {
+      setTransactions([]);
+      return;
+    }
+
+    const fetchTransactions = async () => {
+      setIsLoadingTx(true);
+      setTxError(null);
+      try {
+        // ERC20トークン転送専用のエンドポイントを使用
+        const url = `${BLOCKSCOUT_BASE_URL}/api/v2/addresses/${targetAddress}/token-transfers`;
+        // API実行
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("トークン転送履歴の取得に失敗しました");
+        }
+
+        const data = (await response.json()) as {
+          items?: BlockscoutTokenTransfer[];
+        };
+
+        const normalizedAddress = targetAddress.toLowerCase();
+        const items = data.items ?? [];
+        const mapped = items
+          .filter((tx) => {
+            // 必須データが存在するかチェック
+            return tx.transaction_hash && tx.to?.hash && tx.from?.hash && tx.total?.value && tx.token?.symbol;
+          })
+          .map((tx) => {
+            const toAddress = tx.to.hash.toLowerCase();
+            const fromAddress = tx.from.hash.toLowerCase();
+            const isReceive = toAddress === normalizedAddress;
+
+            // トークンの decimals を考慮した金額計算
+            const decimals = parseInt(tx.total.decimals || "18");
+            const rawValue = BigInt(tx.total.value);
+            const tokenValue = Number(rawValue) / Math.pow(10, decimals);
+            const formattedValue = tokenValue.toFixed(4);
+
+            const sign = isReceive ? "+" : "-";
+            const tokenSymbol = tx.token.symbol || "TOKEN";
+            const description = isReceive ? `${tokenSymbol} 受け取り` : `${tokenSymbol} 送信`;
+
+            return {
+              id: tx.transaction_hash,
+              type: (isReceive ? "receive" : "send") as "receive" | "send",
+              amount: `${sign}${formattedValue} ${tokenSymbol}`,
+              description,
+              time: new Date(tx.timestamp).toLocaleString("ja-JP"),
+            } as WalletTransaction;
+          });
+
+        setTransactions(mapped);
+      } catch (error) {
+        setTxError(error instanceof Error ? error.message : "取得に失敗しました");
+      } finally {
+        setIsLoadingTx(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [accountAddress, owner]);
+
+  const displayBalance = balance ? `${balance} ETH` : "0.00 ETH";
+  const displayTokenBalance = tokenBalance
+    ? `${tokenBalance} ${tokenSymbol || ""}`.trim()
+    : `0.00 ${tokenSymbol || "CVTT"}`;
+  const hasTransactions = transactions.length > 0;
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header
         title={
-          <DecryptedText
-            text="ウォレット"
-            animateOn="view"
-            speed={100}
-            className="font-bold text-xl text-primary"
-          />
+          <DecryptedText text="ウォレット" animateOn="view" speed={100} className="font-bold text-xl text-primary" />
         }
       />
 
       <main className="flex-1 flex flex-col px-4 pb-20">
-        {/* Coming Soon バッジ */}
+        {/* 接続ステータス */}
         <div className="flex justify-center mt-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm font-medium">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
             <Clock className="h-4 w-4" />
-            Coming Soon
+            {status === "connecting" ? "接続中" : owner ? "接続済み" : "未接続"}
           </span>
         </div>
 
@@ -83,16 +175,19 @@ export default function WalletPage() {
               <div className="p-2 bg-primary/20 rounded-lg box-glow">
                 <Wallet className="h-6 w-6 text-primary" />
               </div>
-              <span className="text-muted-foreground text-sm font-medium">
-                CarWallet 残高
-              </span>
+              <span className="text-muted-foreground text-sm font-bold">CarWallet 残高</span>
             </div>
-            <div className="mb-2">
-                <ShinyText text="¥0.00" className="text-4xl font-bold" />
-            </div>
-            <p className="text-muted-foreground/80 text-sm">
-              <DecryptedText text="ウォレット機能は開発中です" speed={50} animateOn="view" />
+            <p className="text-sm text-muted-foreground">
+              <ShinyText text={displayTokenBalance} className="text-4xl font-bold" />
             </p>
+            <p className="text-muted-foreground/80 text-sm">
+              <DecryptedText
+                text={accountAddress ? "CarWalletの残高を表示しています" : "ウォレットを作成すると残高が表示されます"}
+                speed={50}
+                animateOn="view"
+              />
+            </p>
+            {accountAddress && <p className="mt-3 text-xs text-muted-foreground break-all">Wallet: {accountAddress}</p>}
           </CardContent>
         </Card>
 
@@ -126,57 +221,65 @@ export default function WalletPage() {
             <span className="w-1 h-6 bg-primary rounded-full box-glow" />
             取引履歴
           </h3>
-          <div className="space-y-3">
-            {DUMMY_TRANSACTIONS.map((tx) => (
-              <Card
-                key={tx.id}
-                className="flex items-center gap-4 p-4 border-border/50 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors"
-              >
-                <div
-                  className={cn(
-                    "p-2 rounded-full",
-                    tx.type === "receive"
-                      ? "bg-green-500/10 text-green-500"
-                      : "bg-blue-500/10 text-blue-500",
-                  )}
+          {isLoadingTx && (
+            <div className="rounded-xl border border-border/50 bg-card/30 p-8 flex flex-col items-center justify-center gap-3">
+              <LoadingSpinner size="lg" />
+              <p className="text-sm text-muted-foreground">取引履歴を取得しています...</p>
+            </div>
+          )}
+          {txError && (
+            <div className="rounded-xl border border-red-200/40 bg-red-500/10 p-6 text-center text-sm text-red-200">
+              {txError}
+            </div>
+          )}
+          {!isLoadingTx && !txError && !hasTransactions && (
+            <div className="rounded-xl border border-border/50 bg-card/30 p-6 text-center text-sm text-muted-foreground">
+              まだ取引履歴がありません
+            </div>
+          )}
+          {hasTransactions && (
+            <div className="space-y-3">
+              {transactions.map((tx) => (
+                <Card
+                  key={tx.id}
+                  className="flex items-center gap-4 p-4 border-border/50 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors"
                 >
-                  {tx.type === "receive" ? (
-                    <ArrowDownLeft className="h-5 w-5" />
-                  ) : (
-                    <ArrowUpRight className="h-5 w-5" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {tx.description}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {tx.time}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "text-sm font-semibold",
-                    tx.type === "receive"
-                      ? "text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
-                      : "text-foreground",
-                  )}
-                >
-                  {tx.amount}
-                </span>
-              </Card>
-            ))}
-          </div>
+                  <div
+                    className={cn(
+                      "p-2 rounded-full",
+                      tx.type === "receive" ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500",
+                    )}
+                  >
+                    {tx.type === "receive" ? (
+                      <ArrowDownLeft className="h-5 w-5" />
+                    ) : (
+                      <ArrowUpRight className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{tx.description}</p>
+                    <p className="text-xs text-muted-foreground">{tx.time}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm font-semibold",
+                      tx.type === "receive"
+                        ? "text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+                        : "text-foreground",
+                    )}
+                  >
+                    {tx.amount}
+                  </span>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* 開発中メッセージ */}
+        {/* 補足メッセージ */}
         <div className="mt-8 p-4 bg-muted/20 border border-muted/30 rounded-xl text-center">
           <p className="text-sm text-muted-foreground">
-            <DecryptedText
-                text="ウォレット機能は現在開発中です。今後のアップデートをお待ちください。"
-                speed={30}
-                animateOn="view"
-            />
+            <DecryptedText text="Base Sepoliaネットワークの残高を表示しています。" speed={30} animateOn="view" />
           </p>
         </div>
       </main>

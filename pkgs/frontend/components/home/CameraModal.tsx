@@ -14,14 +14,15 @@ import { CameraCapture } from "@/components/license-plate/CameraCapture";
 import { RecognitionResultDisplay } from "@/components/license-plate/RecognitionResult";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLicensePlateRecognition } from "@/lib/license-plate/use-license-plate-recognition";
+import { useWallet } from "@/lib/wallet/wallet-context";
 import type {
   CapturedImage,
   CaptureError,
   LicensePlateData,
-  RecognitionError,
 } from "@/types/license-plate";
 import { X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // ============================================================================
 // 型定義
@@ -60,21 +61,49 @@ export function CameraModal({
   onRecognitionComplete,
 }: CameraModalProps) {
   const [state, setState] = useState<ModalState>("camera");
-  const [recognitionResult, setRecognitionResult] =
-    useState<LicensePlateData | null>(null);
-  const [recognitionError, setRecognitionError] =
-    useState<RecognitionError | null>(null);
   const [captureError, setCaptureError] = useState<CaptureError | null>(null);
+
+  const {
+    state: recognitionState,
+    result: recognitionResult,
+    error: recognitionError,
+    recognizeImage,
+    reset: resetRecognition,
+  } = useLicensePlateRecognition({
+    mode: "single",
+    onSuccess: (result) => {
+      setState("result");
+      onRecognitionComplete?.(result);
+    },
+    onError: () => {
+      setState("result");
+    },
+  });
+
+  const {
+    status: walletStatus,
+    owner,
+    txHash,
+    commitment,
+    error: walletError,
+    tokenBalance,
+    tokenSymbol,
+    mintStatus,
+    mintTxHash,
+    mintError,
+    connect,
+    createWallet,
+    mintTokens,
+  } = useWallet();
 
   // モーダルが閉じられたときに状態をリセット
   useEffect(() => {
     if (!isOpen) {
       setState("camera");
-      setRecognitionResult(null);
-      setRecognitionError(null);
       setCaptureError(null);
+      resetRecognition();
     }
-  }, [isOpen]);
+  }, [isOpen, resetRecognition]);
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -107,38 +136,10 @@ export function CameraModal({
     async (image: CapturedImage) => {
       setState("recognizing");
       setCaptureError(null);
-      setRecognitionError(null);
-
-      try {
-        // TODO: 実際のAPI呼び出しに置き換える
-        // 現在はモック認識結果を返す
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        const mockResult: LicensePlateData = {
-          region: "品川",
-          classificationNumber: "302",
-          hiragana: "ほ",
-          serialNumber: "3184",
-          fullText: "品川302ほ3184",
-          confidence: 95,
-          plateType: "REGULAR",
-          recognizedAt: Date.now(),
-        };
-
-        setRecognitionResult(mockResult);
-        setState("result");
-        onRecognitionComplete?.(mockResult);
-      } catch (error) {
-        console.error("Recognition error:", error);
-        setRecognitionError({
-          code: "API_CONNECTION_FAILED",
-          message: "サービスに接続できません",
-          suggestion: "しばらく待ってから再試行してください",
-        });
-        setState("result");
-      }
+      resetRecognition();
+      await recognizeImage(image);
     },
-    [onRecognitionComplete],
+    [recognizeImage, resetRecognition],
   );
 
   /**
@@ -153,10 +154,143 @@ export function CameraModal({
    */
   const handleRetry = useCallback(() => {
     setState("camera");
-    setRecognitionResult(null);
-    setRecognitionError(null);
     setCaptureError(null);
-  }, []);
+    resetRecognition();
+  }, [resetRecognition]);
+
+  const handleCreateWallet = useCallback(async () => {
+    if (!recognitionResult) {
+      return;
+    }
+    await createWallet(recognitionResult);
+  }, [recognitionResult, createWallet]);
+
+  const marketValue = useMemo(() => {
+    if (!recognitionResult) {
+      return null;
+    }
+
+    const classification =
+      Number.parseInt(recognitionResult.classificationNumber, 10) || 0;
+    const serial = Number.parseInt(recognitionResult.serialNumber, 10) || 0;
+    const baseValue = 1_200_000;
+    const classAdjustment = (classification % 100) * 2_000;
+    const serialAdjustment = (serial % 1_000) * 500;
+
+    return baseValue + classAdjustment + serialAdjustment;
+  }, [recognitionResult]);
+
+  const mintAmount = useMemo(() => {
+    if (!marketValue) {
+      return null;
+    }
+    return Math.max(1, Math.round(marketValue / 1_000));
+  }, [marketValue]);
+
+  const handleMintTokens = useCallback(async () => {
+    if (!mintAmount) {
+      return;
+    }
+    await mintTokens(String(mintAmount));
+  }, [mintAmount, mintTokens]);
+
+  const formatYen = (value: number) =>
+    new Intl.NumberFormat("ja-JP").format(value);
+
+  const walletPanel = (
+    <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-white">
+      <p className="text-sm text-white/70">ウォレット接続</p>
+      <p className="mt-1 text-base font-semibold">
+        {owner ? "接続済み" : "MetaMaskを接続してください"}
+      </p>
+      {owner && (
+        <p className="mt-1 text-xs text-white/60 break-all">{owner}</p>
+      )}
+      {walletError && (
+        <p className="mt-2 text-xs text-red-200 break-all">{walletError}</p>
+      )}
+      <div className="mt-4 flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={connect}
+          disabled={walletStatus === "connecting"}
+        >
+          {walletStatus === "connecting" ? "接続中..." : "MetaMaskを接続"}
+        </Button>
+        {recognitionResult && (
+          <Button
+            type="button"
+            variant="default"
+            onClick={handleCreateWallet}
+            disabled={
+              walletStatus === "proving" || walletStatus === "submitting"
+            }
+          >
+            {walletStatus === "proving" && "ZK証明を生成中..."}
+            {walletStatus === "submitting" && "送信中..."}
+            {walletStatus === "success" && "作成完了"}
+            {walletStatus === "idle" && "ウォレットを作成"}
+            {walletStatus === "error" && "再試行する"}
+          </Button>
+        )}
+      </div>
+      {commitment && (
+        <p className="mt-3 text-xs text-white/60 break-all">
+          Commitment: {commitment}
+        </p>
+      )}
+      {txHash && (
+        <p className="mt-2 text-xs text-white/60 break-all">
+          Tx Hash: {txHash}
+        </p>
+      )}
+      <div className="mt-3 text-xs text-white/70">
+        トークン残高:{" "}
+        {tokenBalance
+          ? `${tokenBalance} ${tokenSymbol || "CVTT"}`
+          : `0 ${tokenSymbol || "CVTT"}`}
+      </div>
+    </div>
+  );
+
+  const valuationPanel =
+    recognitionResult && marketValue && mintAmount ? (
+      <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-white">
+        <p className="text-sm text-white/70">市場価値査定</p>
+        <p className="mt-1 text-2xl font-semibold">
+          ¥{formatYen(marketValue)}
+        </p>
+        <div className="mt-3 flex items-center justify-between text-sm text-white/80">
+          <span>ミント予定</span>
+          <span>
+            {mintAmount} {tokenSymbol || "CVTT"}
+          </span>
+        </div>
+        {mintError && (
+          <p className="mt-2 text-xs text-red-200 break-all">{mintError}</p>
+        )}
+        {mintTxHash && (
+          <p className="mt-2 text-xs text-white/60 break-all">
+            Mint Tx: {mintTxHash}
+          </p>
+        )}
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="default"
+            onClick={handleMintTokens}
+            disabled={mintStatus === "submitting"}
+            className="w-full"
+          >
+            {mintStatus === "submitting" && "ミント中..."}
+            {mintStatus === "success" && "ミント完了"}
+            {mintStatus === "idle" && "ERC20をミント"}
+            {mintStatus === "error" && "再試行する"}
+          </Button>
+        </div>
+      </div>
+    ) : null;
 
   if (!isOpen) {
     return null;
@@ -205,13 +339,19 @@ export function CameraModal({
                 <p>{captureError.message}</p>
               </div>
             )}
+            {walletPanel}
+            {valuationPanel}
           </div>
         )}
 
         {state === "recognizing" && (
           <div className="flex flex-col items-center gap-4">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent" />
-            <p className="text-white text-lg">認識中...</p>
+            <p className="text-white text-lg">
+              {recognitionState === "validating"
+                ? "画像を検証中..."
+                : "認識中..."}
+            </p>
           </div>
         )}
 
@@ -223,6 +363,8 @@ export function CameraModal({
               error={recognitionError}
               onRetry={handleRetry}
             />
+            {walletPanel}
+            {valuationPanel}
             <div className="mt-6 flex gap-3">
               <Button
                 type="button"

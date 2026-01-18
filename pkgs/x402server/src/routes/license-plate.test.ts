@@ -14,6 +14,7 @@ import {
   type RecognizeResponse,
 } from "./license-plate";
 import { resetRateLimitManager } from "../middleware/rate-limiter";
+import { QwenVLError, type QwenVLClient } from "../lib/qwen-vl-client";
 
 describe("License Plate Recognition API", () => {
   let app: Hono;
@@ -87,6 +88,52 @@ describe("License Plate Recognition API", () => {
 
       const body = (await response.json()) as RecognizeResponse;
       expect(body.success).toBe(true);
+    });
+
+    it("タイムアウト時はダミー値の認識結果を返す", async () => {
+      const qwenClient = {
+        recognize: async () => {
+          throw new QwenVLError(
+            "認識処理がタイムアウトしました",
+            "TIMEOUT",
+            true,
+          );
+        },
+      } as QwenVLClient;
+
+      app = new Hono();
+      app.route(
+        "/api/license-plate",
+        createLicensePlateRouter({
+          rateLimitConfig: {
+            maxConcurrent: 100,
+            windowMs: 60000,
+            maxRequests: 1000,
+          },
+          useMock: false,
+          qwenClient,
+        }),
+      );
+
+      const validBase64 =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+      const response = await app.request("/api/license-plate/recognize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: validBase64,
+          mode: "single",
+        }),
+      });
+
+      expect(response.status).toBe(200);
+
+      const body = (await response.json()) as RecognizeResponse;
+      expect(body.success).toBe(true);
+      expect(body.data?.fullText).toBe("品川330あ1234");
     });
 
     it("画像データが空の場合はエラーを返す", async () => {
