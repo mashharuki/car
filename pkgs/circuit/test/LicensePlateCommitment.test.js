@@ -6,11 +6,13 @@ const fs = require("fs");
  */
 async function run() {
   // 各ファイルまでのパス
-  const WASM_PATH = "./PasswordHash_js/PasswordHash.wasm";
-  const ZKEY_PATH = "./zkey/PasswordHash_final.zkey";
+  const WASM_PATH = "./LicensePlateCommitment_js/LicensePlateCommitment.wasm";
+  const ZKEY_PATH = "./zkey/LicensePlateCommitment_final.zkey";
   const VKEY_PATH = "./zkey/verification_key.json";
   // input data
-  const inputData = JSON.parse(fs.readFileSync("./data/input.json"));
+  const inputData = JSON.parse(
+    fs.readFileSync("./data/LicensePlateCommitment.json"),
+  );
 
   console.log("Input Data: ");
   console.log(inputData);
