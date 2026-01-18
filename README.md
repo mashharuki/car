@@ -366,3 +366,16 @@ APIのドキュメントは/docs/以下に置くこと
 APIを更新したらAPIドキュメントを記載すること。
 APIのドキュメントはphp側とpython側で別けるのみで、細かく分けないこと。
 
+## デプロイ・検証実績 (Base Sepolia)
+
+本プロジェクトのコントラクトデプロイおよび動作検証の結果です。
+
+| 項目 | アドレス / ハッシュ | エクスプローラーリンク |
+|:---|:---|:---|
+| **Deployer** | `0x51908F598A5e0d8F1A3bAbFa6DF76F9704daD072` | [View on Basescan](https://sepolia.basescan.org/address/0x51908F598A5e0d8F1A3bAbFa6DF76F9704daD072) |
+| **Factory Address** | `0xbc95fBAc440546f7D2294Ae7E1F7ea23b5c87A9E` | [View on Basescan](https://sepolia.basescan.org/address/0xbc95fBAc440546f7D2294Ae7E1F7ea23b5c87A9E) |
+| **Plate Commitment** | `0x51247c3efce7c9c34957505920296dca29c9a91904671265305d6ae5efd911de` | - |
+| **Predicted Wallet** | `0x3617953dc0b3B98B52beF82cF4c6a6629f379389` | [View on Basescan](https://sepolia.basescan.org/address/0x3617953dc0b3B98B52beF82cF4c6a6629f379389) |
+| **MockERC20** | `0x3e39DaaC436990E8eCb72849D43f81F3b9E7E610` | [View on Basescan](https://sepolia.basescan.org/address/0x3e39DaaC436990E8eCb72849D43f81F3b9E7E610) |
+| **Transfer Transaction** | `0x19110d1c2c32ffffb4f5a14289d800250414ab443516abf58cb96e54315536dd` | [View on Basescan](https://sepolia.basescan.org/tx/0x19110d1c2c32ffffb4f5a14289d800250414ab443516abf58cb96e54315536dd) |
+
