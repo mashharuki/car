@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * ウォレットページ（ダミー）
@@ -10,9 +10,9 @@
  * @see Requirements 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
-import { Wallet, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
-import { Header } from '@/components/layout/Header';
-import { cn } from '@/lib/utils';
+import { Wallet, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
+import { Header } from "@/components/layout/Header";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // ダミーデータ
@@ -20,25 +20,25 @@ import { cn } from '@/lib/utils';
 
 const DUMMY_TRANSACTIONS = [
   {
-    id: '1',
-    type: 'receive' as const,
-    amount: '+¥500',
-    description: '投げ銭を受け取りました',
-    time: '2分前',
+    id: "1",
+    type: "receive" as const,
+    amount: "+¥500",
+    description: "投げ銭を受け取りました",
+    time: "2分前",
   },
   {
-    id: '2',
-    type: 'send' as const,
-    amount: '-¥100',
-    description: '投げ銭を送りました',
-    time: '1時間前',
+    id: "2",
+    type: "send" as const,
+    amount: "-¥100",
+    description: "投げ銭を送りました",
+    time: "1時間前",
   },
   {
-    id: '3',
-    type: 'receive' as const,
-    amount: '+¥1,000',
-    description: '駐車場料金の払い戻し',
-    time: '昨日',
+    id: "3",
+    type: "receive" as const,
+    amount: "+¥1,000",
+    description: "駐車場料金の払い戻し",
+    time: "昨日",
   },
 ];
 
@@ -82,10 +82,10 @@ export default function WalletPage() {
             type="button"
             disabled
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl',
-              'bg-white dark:bg-gray-900',
-              'border border-gray-200 dark:border-gray-800',
-              'opacity-50 cursor-not-allowed'
+              "flex flex-col items-center gap-2 p-4 rounded-xl",
+              "bg-white dark:bg-gray-900",
+              "border border-gray-200 dark:border-gray-800",
+              "opacity-50 cursor-not-allowed",
             )}
           >
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -99,10 +99,10 @@ export default function WalletPage() {
             type="button"
             disabled
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl',
-              'bg-white dark:bg-gray-900',
-              'border border-gray-200 dark:border-gray-800',
-              'opacity-50 cursor-not-allowed'
+              "flex flex-col items-center gap-2 p-4 rounded-xl",
+              "bg-white dark:bg-gray-900",
+              "border border-gray-200 dark:border-gray-800",
+              "opacity-50 cursor-not-allowed",
             )}
           >
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -124,32 +124,32 @@ export default function WalletPage() {
               <div
                 key={tx.id}
                 className={cn(
-                  'flex items-center gap-4 p-4 rounded-xl',
-                  'bg-white dark:bg-gray-900',
-                  'border border-gray-200 dark:border-gray-800',
-                  'opacity-50'
+                  "flex items-center gap-4 p-4 rounded-xl",
+                  "bg-white dark:bg-gray-900",
+                  "border border-gray-200 dark:border-gray-800",
+                  "opacity-50",
                 )}
               >
                 <div
                   className={cn(
-                    'p-2 rounded-full',
-                    tx.type === 'receive'
-                      ? 'bg-green-100 dark:bg-green-900/30'
-                      : 'bg-blue-100 dark:bg-blue-900/30'
+                    "p-2 rounded-full",
+                    tx.type === "receive"
+                      ? "bg-green-100 dark:bg-green-900/30"
+                      : "bg-blue-100 dark:bg-blue-900/30",
                   )}
                 >
-                  {tx.type === 'receive' ? (
+                  {tx.type === "receive" ? (
                     <ArrowDownLeft
                       className={cn(
-                        'h-5 w-5',
-                        'text-green-600 dark:text-green-400'
+                        "h-5 w-5",
+                        "text-green-600 dark:text-green-400",
                       )}
                     />
                   ) : (
                     <ArrowUpRight
                       className={cn(
-                        'h-5 w-5',
-                        'text-blue-600 dark:text-blue-400'
+                        "h-5 w-5",
+                        "text-blue-600 dark:text-blue-400",
                       )}
                     />
                   )}
@@ -164,10 +164,10 @@ export default function WalletPage() {
                 </div>
                 <span
                   className={cn(
-                    'text-sm font-semibold',
-                    tx.type === 'receive'
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-gray-900 dark:text-white'
+                    "text-sm font-semibold",
+                    tx.type === "receive"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-gray-900 dark:text-white",
                   )}
                 >
                   {tx.amount}

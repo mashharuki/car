@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * トップページ
@@ -10,15 +10,16 @@
  * @see Requirements 1.1, 1.2, 1.3, 1.4, 1.5
  */
 
-import { useState } from 'react';
-import { Header } from '@/components/layout/Header';
-import { CameraButton } from '@/components/home/CameraButton';
-import { CameraModal } from '@/components/home/CameraModal';
-import type { LicensePlateData } from '@/types/license-plate';
+import { useState } from "react";
+import { Header } from "@/components/layout/Header";
+import { CameraButton } from "@/components/home/CameraButton";
+import { CameraModal } from "@/components/home/CameraModal";
+import type { LicensePlateData } from "@/types/license-plate";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [lastRecognition, setLastRecognition] = useState<LicensePlateData | null>(null);
+  const [lastRecognition, setLastRecognition] =
+    useState<LicensePlateData | null>(null);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -30,7 +31,7 @@ export default function Home() {
 
   const handleRecognitionComplete = (result: LicensePlateData) => {
     setLastRecognition(result);
-    console.log('Recognition complete:', result);
+    console.log("Recognition complete:", result);
   };
 
   return (

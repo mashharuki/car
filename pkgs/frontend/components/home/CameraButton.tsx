@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * カメラ起動ボタンコンポーネント
@@ -10,8 +10,8 @@
  * @see Requirements 2.5, 2.6
  */
 
-import { Camera } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Camera } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // 型定義
@@ -49,16 +49,16 @@ export function CameraButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'flex flex-col items-center justify-center gap-3',
-        'w-32 h-32 rounded-full',
-        'bg-gradient-to-br from-blue-500 to-blue-600',
-        'text-white shadow-lg shadow-blue-500/30',
-        'transition-all duration-300 ease-out',
-        'hover:scale-105 hover:shadow-xl hover:shadow-blue-500/40',
-        'active:scale-95',
-        'focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/50',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-        className
+        "flex flex-col items-center justify-center gap-3",
+        "w-32 h-32 rounded-full",
+        "bg-gradient-to-br from-blue-500 to-blue-600",
+        "text-white shadow-lg shadow-blue-500/30",
+        "transition-all duration-300 ease-out",
+        "hover:scale-105 hover:shadow-xl hover:shadow-blue-500/40",
+        "active:scale-95",
+        "focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/50",
+        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+        className,
       )}
       aria-label="カメラを起動してナンバープレートを撮影"
     >

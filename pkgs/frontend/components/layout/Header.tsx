@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * ヘッダーコンポーネント
@@ -9,9 +9,9 @@
  * @see Requirements 1.1
  */
 
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // 型定義
@@ -30,7 +30,7 @@ export interface HeaderProps {
 // 定数
 // ============================================================================
 
-const DEFAULT_TITLE = 'CarWallet';
+const DEFAULT_TITLE = "CarWallet";
 
 // ============================================================================
 // コンポーネント
@@ -58,13 +58,13 @@ export function Header({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40',
-        'h-14 px-4',
-        'flex items-center',
-        'bg-white/80 backdrop-blur-lg',
-        'border-b border-gray-200',
-        'dark:bg-gray-900/80 dark:border-gray-800',
-        className
+        "sticky top-0 z-40",
+        "h-14 px-4",
+        "flex items-center",
+        "bg-white/80 backdrop-blur-lg",
+        "border-b border-gray-200",
+        "dark:bg-gray-900/80 dark:border-gray-800",
+        className,
       )}
     >
       <div className="flex items-center gap-3 w-full max-w-3xl mx-auto">
@@ -73,13 +73,13 @@ export function Header({
             type="button"
             onClick={handleBack}
             className={cn(
-              'flex items-center justify-center',
-              'w-10 h-10 -ml-2',
-              'rounded-full',
-              'text-gray-600 dark:text-gray-400',
-              'hover:bg-gray-100 dark:hover:bg-gray-800',
-              'transition-colors duration-200',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+              "flex items-center justify-center",
+              "w-10 h-10 -ml-2",
+              "rounded-full",
+              "text-gray-600 dark:text-gray-400",
+              "hover:bg-gray-100 dark:hover:bg-gray-800",
+              "transition-colors duration-200",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
             )}
             aria-label="戻る"
           >
