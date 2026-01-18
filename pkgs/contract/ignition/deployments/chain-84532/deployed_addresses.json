@@ -1,3 +1,6 @@
 {
-  "PasswordHashVerifierModule#PasswordHashVerifier": "0x96ebbD0eb72A115256EdA36A4790561eF086B6d5"
+  "LicensePlateAccountFactoryModule#AccountFactory": "0xf6FCb54C87ca077a93DBF7EA9Bef01d216d7f03B",
+  "LicensePlateAccountFactoryModule#LicensePlateAccountFactory": "0xbc95fBAc440546f7D2294Ae7E1F7ea23b5c87A9E",
+  "LicensePlateAccountFactoryModule#LicensePlateCommitmentVerifier": "0xA09e0E576E2BfFa4C3e41bA1AC7F034C59a24829",
+  "LicensePlateAccountFactoryModule#VehicleRegistry": "0x0331FF36B58c2595d7d336F98c9fE3C0E32E7512"
 }

@@ -1,4 +1,5 @@
-import "@nomicfoundation/hardhat-toolbox-viem";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ignition-ethers";
 import * as dotenv from "dotenv";
 import type { HardhatUserConfig } from "hardhat/config";
 import "./tasks";

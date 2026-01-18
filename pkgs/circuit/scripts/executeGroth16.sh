@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Variable to store the name of the circuit
-CIRCUIT=PasswordHash
+# CIRCUIT=PasswordHash
+CIRCUIT=LicensePlateCommitment
 
 # Variable to store the number of the ptau file
 PTAU=14
@@ -28,7 +29,12 @@ fi
 circom ./src/${CIRCUIT}.circom --r1cs --wasm --sym --c
 
 # Generate the witness.wtns
-node ${CIRCUIT}_js/generate_witness.js ${CIRCUIT}_js/${CIRCUIT}.wasm ./data/input.json ${CIRCUIT}_js/witness.wtns
+INPUT_FILE=./data/${CIRCUIT}.json
+if [ ! -f "$INPUT_FILE" ]; then
+    INPUT_FILE=./data/input.json
+fi
+
+node ${CIRCUIT}_js/generate_witness.js ${CIRCUIT}_js/${CIRCUIT}.wasm "$INPUT_FILE" ${CIRCUIT}_js/witness.wtns
 
 echo "----- Generate .zkey file -----"
 # Generate a .zkey file that will contain the proving and verification keys together with all phase 2 contributions
