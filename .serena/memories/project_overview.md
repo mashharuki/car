@@ -1,7 +1,7 @@
 # プロジェクト概要
 
 ## プロジェクト名
-car - ナンバープレート連動ウォレットシステム
+car - ナンバープレート連動ウォレットシステム (inCar)
 
 ## プロジェクトの目的
 次世代オートモーティブ生成AIハッカソン用のリポジトリ。ブロックチェーン（Web3）とAI技術を融合させた次世代のモビリティプラットフォーム。
@@ -66,22 +66,41 @@ car - ナンバープレート連動ウォレットシステム
    - 自動支払いインターセプターにより、リクエスト送信前に決済を完了
 
 ## システム構成
-pnpm workspaceを使用したモノレポ構成。以下の5つの主要パッケージで構成：
+
+### モノレポ構成
+pnpm workspaceを使用したモノレポ構成。以下のパッケージで構成：
+
+#### メインパッケージ
 - **frontend**: Next.js + React 19のWebアプリケーション（PWA対応）
 - **contract**: Hardhat + Solidityのスマートコントラクト（Base Sepolia L2）
 - **circuit**: Circomによるゼロ知識証明回路（Groth16）
 - **mcp**: x402決済プロトコル対応MCPクライアント（Claude Desktop統合）
 - **x402server**: x402決済対応Honoサーバー（有料API提供、Google Cloud Run対応）
 
+#### サブパッケージ
+- **molmo2_hack**: Molmo2画像認識モデル関連スクリプト
+- **qwen-sample**: Qwenマルチモーダルサンプル実装
+
+#### バックエンドサーバー
+- **laravel**: Laravel 11 APIサーバー（PHP 8.2、認証、CRUD、履歴管理）
+- **python**: Flask APIサーバー（AI推論、画像処理、車両査定）
+
+#### ランディングページ
+- **www/web**: 静的HTMLランディングページ（Tailwind CSS）
+
 ## 技術スタック
 | カテゴリ | 技術 |
 |---------|------|
-| **フロントエンド** | Next.js, TypeScript, TailwindCSS, Shadcn/ui, React Bits, biome |
-| **バックエンド** | Hono, x402-hono, Express, MCP SDK |
-| **AI** | Qwen, allenai/Molmo2-8B, Claude Desktop (MCP統合) |
-| **Web3** | Base Sepolia, AA, SmartAccount, ゼロ知識証明, Solidity, Circom, x402決済プロトコル |
+| **フロントエンド** | Next.js 16, React 19, TypeScript, TailwindCSS 4, Shadcn/ui, Motion, biome |
+| **バックエンド（Laravel）** | Laravel 11, PHP 8.2, Composer |
+| **バックエンド（Python）** | Flask 3.0, httpx, python-dotenv |
+| **AI** | Qwen (OpenAI SDK), allenai/Molmo2-8B, Claude Desktop (MCP統合) |
+| **Web3** | Base Sepolia, ERC4337 AA, SmartAccount, ゼロ知識証明, Solidity 0.8.28, Circom, x402決済プロトコル |
 | **決済** | x402, x402-axios, x402-hono, USDC (ステーブルコイン) |
-| **インフラ** | Google Cloud Run, Docker, AWS Lambda |
+| **API・MCP** | MCP SDK 1.9.0, Hono 4.7.1, Express 4.18, Axios 1.8 |
+| **インフラ** | Google Cloud Run, Docker, AWS Lambda, Node.js >=18 |
+| **開発ツール** | pnpm 10.20.0, Hardhat 2.26, Viem, SnarkJS 0.6.9 |
+| **コード品質** | Biome 2.3.11, Solhint, ESLint 9, Vitest |
 
 ## ビジネスモデル
 - 施設側: 自動決済による回転率向上（30%）、降車回数削減（90%）
@@ -95,10 +114,28 @@ pnpm workspaceを使用したモノレポ構成。以下の5つの主要パッ�
 | ナンバープレート認識機能 | 車のナンバープレートの情報を認識する | 開発中 |
 | ウォレットアドレス変換機能 | ゼロ知識証明により内容を秘匿化しながら決定論的にナンバープレートからウォレットアドレスを算出する機能 | 開発中 |
 | 自動車の価値を算出する機能（トークン化） | 自動車の現在の評価額をトークン化する機能 | 計画中 |
-| チップ機能 | 道を譲ってもらった際の感謝を送信する機能 | 計画中 |
+| チップ機能 | 道を譲ってもらった際の感謝を送信する機能（x402による支払い） | 計画中 |
+| ゲート自動決済 | AIカメラによる自動ナンバー認識と決済 | 計画中 |
+| ドライブスルー革命 | 到着と同時の注文・決済完了 | 計画中 |
+| AIコンシェルジュ | 音声AIによる駐車場検索・予約・決済 | 計画中 |
 
-## 機能ごとの処理シーケンス図
-（今後追加予定）
+## API設計
+
+### Laravel API (`/api/`) - ビジネスロジック系
+- 認証・ユーザー管理（6エンドポイント）
+- ナンバープレート・ウォレット管理（4エンドポイント）
+- 車両価値トークン化・ローン機能（8エンドポイント）
+- 通知機能（4エンドポイント）
+- その他・共通機能（3エンドポイント）
+
+### Flask API (`/papi/`) - AI/画像処理系
+- `/papi/recognize`: ナンバープレート認識（Qwen-VL）
+- `/papi/validate-image`: 画像品質検証
+- `/papi/appraise-vehicle`: 車両査定（AI/外部API統合）
+
+### x402 Server API - 決済系
+- `/tip`: 投げ銭トランザクション実行
+- `/tip/status/:txHash`: トランザクションステータス取得
 
 ## 将来構想
 自動車の走行履歴や自動車間のトランザクションのやり取りを分散型ナレッジグラフネットワークに書き込み、社会の実情を反映した渋滞予測などのプログラムを作成することに繋げる。
@@ -184,8 +221,8 @@ pnpm contract coverage
 
 デプロイ（Base Sepolia）：
 ```bash
-# PasswordHashVerifierのデプロイ＆検証
-pnpm contract deploy:PasswordHashVerifier
+# LicensePlateAccountFactoryのデプロイ＆検証
+pnpm contract deploy:LicensePlate:baseSepolia
 
 # デプロイ済みコントラクトの検証
 pnpm contract verify
