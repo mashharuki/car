@@ -165,10 +165,32 @@ export class LicensePlateApiClient {
 
       clearTimeout(timeoutId);
 
-      const data = (await response.json()) as RecognizeResponse;
+      const contentType = response.headers.get("content-type") ?? "";
+      let data: RecognizeResponse | null = null;
+
+      if (contentType.includes("application/json")) {
+        try {
+          data = (await response.json()) as RecognizeResponse;
+        } catch {
+          throw new LicensePlateApiError(
+            "APIレスポンスの解析に失敗しました",
+            "API_CONNECTION_FAILED",
+            response.status,
+            "しばらく待ってから再試行してください",
+          );
+        }
+      } else {
+        await response.text().catch(() => undefined);
+        throw new LicensePlateApiError(
+          "APIレスポンスが不正です",
+          "API_CONNECTION_FAILED",
+          response.status,
+          "しばらく待ってから再試行してください",
+        );
+      }
 
       // HTTPエラーの場合でもレスポンスボディにエラー情報が含まれる
-      if (!response.ok && !data.error) {
+      if (!response.ok && !data?.error) {
         throw new LicensePlateApiError(
           `HTTP error: ${response.status}`,
           "API_CONNECTION_FAILED",

@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineLoading } from "@/components/ui/inline-loading";
 import { useMemo, useState } from "react";
 
 type ApiOk = { ok: true; jobId: string; summary: string; logs?: string };
@@ -34,27 +35,16 @@ export default function Page() {
 
   return (
     <main>
-      <h1 style={{ fontSize: 28, marginBottom: 8 }}>
-        Molmo2-8B 事故動画の安全要約（ローカル）
-      </h1>
+      <h1 style={{ fontSize: 28, marginBottom: 8 }}>Molmo2-8B 事故動画の安全要約（ローカル）</h1>
       <p style={{ marginTop: 0, color: "#444", lineHeight: 1.6 }}>
-        動画をアップロードすると、サーバ側でフレーム抽出 → Molmo2-8B 推論 →
-        安全制約付き要約を返します。
+        動画をアップロードすると、サーバ側でフレーム抽出 → Molmo2-8B 推論 → 安全制約付き要約を返します。
       </p>
 
-      <section
-        style={{ border: "1px solid #ddd", borderRadius: 14, padding: 16 }}
-      >
+      <section style={{ border: "1px solid #ddd", borderRadius: 14, padding: 16 }}>
         <div style={{ display: "grid", gap: 12 }}>
           <label>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              動画ファイル（mp4推奨）
-            </div>
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>動画ファイル（mp4推奨）</div>
+            <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
 
           <button
@@ -68,9 +58,12 @@ export default function Page() {
               color: "#fff",
               cursor: canSubmit ? "pointer" : "not-allowed",
               width: 240,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            {busy ? "解析中…" : "要約を生成"}
+            <InlineLoading isLoading={busy} loadingText="解析中…" text="要約を生成" size="md" />
           </button>
 
           <div style={{ color: "#666", fontSize: 13 }}>

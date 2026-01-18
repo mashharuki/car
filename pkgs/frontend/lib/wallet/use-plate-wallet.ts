@@ -5,6 +5,7 @@ import {
   encodeAbiParameters,
   formatEther,
   formatUnits,
+  parseUnits,
   publicActions,
   type Hex,
 } from "viem";
@@ -38,6 +39,8 @@ export type WalletCreationStatus =
   | "success"
   | "error";
 
+export type MintStatus = "idle" | "submitting" | "success" | "error";
+
 export interface UsePlateWalletOptions {
   factoryAddress?: Hex;
   wasmUrl?: string;
@@ -53,10 +56,14 @@ export interface WalletCreationResult {
   balance?: string;
   tokenBalance?: string;
   tokenSymbol?: string;
+  mintStatus: MintStatus;
+  mintTxHash?: Hex;
+  mintError?: string;
   error?: string;
   connect: () => Promise<void>;
   createWallet: (plate: LicensePlateData) => Promise<void>;
   refreshBalance: () => Promise<void>;
+  mintTokens: (amount: string, to?: Hex) => Promise<void>;
 }
 
 function formatHex(value: bigint): Hex {
@@ -92,6 +99,9 @@ export function usePlateWalletCreation(
   const [tokenBalance, setTokenBalance] = useState<string | undefined>(
     undefined,
   );
+  const [mintStatus, setMintStatus] = useState<MintStatus>("idle");
+  const [mintTxHash, setMintTxHash] = useState<Hex | undefined>(undefined);
+  const [mintError, setMintError] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
 
   const ensureWalletClient = useCallback(async () => {
@@ -266,6 +276,65 @@ export function usePlateWalletCreation(
     tokenDecimals,
   ]);
 
+  const mintTokens = useCallback(
+    async (amount: string, to?: Hex) => {
+      setMintStatus("submitting");
+      setMintTxHash(undefined);
+      setMintError(undefined);
+
+      try {
+        const walletClient = await ensureWalletClient();
+        let currentOwner = owner;
+
+        if (!currentOwner) {
+          const [address] = await walletClient.requestAddresses();
+          currentOwner = address;
+          setOwner(address);
+        }
+
+        const targetAddress = to || accountAddress || currentOwner;
+        if (!targetAddress) {
+          throw new Error("送信先アドレスが見つかりません");
+        }
+
+        const amountUnits = parseUnits(amount, tokenDecimals);
+        const hash = await walletClient.writeContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: "mint",
+          args: [targetAddress, amountUnits],
+          account: currentOwner,
+          chain: baseSepolia,
+        });
+
+        setMintTxHash(hash);
+        setMintStatus("success");
+
+        const publicClient = await ensurePublicClient();
+        const nextTokenBalance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [targetAddress],
+        });
+        setTokenBalance(formatUnits(nextTokenBalance, tokenDecimals));
+      } catch (err) {
+        setMintStatus("error");
+        setMintError(
+          err instanceof Error ? err.message : "トークンのミントに失敗しました",
+        );
+      }
+    },
+    [
+      ensureWalletClient,
+      ensurePublicClient,
+      owner,
+      accountAddress,
+      tokenAddress,
+      tokenDecimals,
+    ],
+  );
+
   return useMemo(
     () => ({
       status,
@@ -276,10 +345,14 @@ export function usePlateWalletCreation(
       balance,
       tokenBalance,
       tokenSymbol,
+      mintStatus,
+      mintTxHash,
+      mintError,
       error,
       connect,
       createWallet,
       refreshBalance,
+      mintTokens,
     }),
     [
       status,
@@ -290,10 +363,14 @@ export function usePlateWalletCreation(
       balance,
       tokenBalance,
       tokenSymbol,
+      mintStatus,
+      mintTxHash,
+      mintError,
       error,
       connect,
       createWallet,
       refreshBalance,
+      mintTokens,
     ],
   );
 }
